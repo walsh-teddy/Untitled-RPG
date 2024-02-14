@@ -1,0 +1,388 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+
+public class Creature : MonoBehaviour
+{
+    // Game manager variables
+    protected GameObject gameManager;
+    protected LevelSpawner levelSpawner;
+    protected Tile space;
+    protected bool controllable = false; // True if its a player character (changed to true in Start() )
+    protected Game game;
+
+    // Animation variables
+    [SerializeField] Animator animationController;
+    protected Tile targetTile;
+
+    [Header("Physical Traits")]
+    [SerializeField] protected string displayName;
+    [SerializeField] protected float height;
+    [SerializeField] protected float stepHeight;
+    [SerializeField] protected float eyeHeight;
+    [SerializeField] protected GameObject body;
+
+
+    [Header("Stats")]
+    // stats that only change outside of the game
+    [SerializeField] protected int strength;
+    [SerializeField] protected int dexterity;
+    [SerializeField] protected int intellect;
+    [SerializeField] protected int speed = 3;
+    [SerializeField] protected int maxHealth;
+    [SerializeField] protected int maxEnergy;
+    [SerializeField] protected int defence; // The minimum an attack needs to roll to hit someone
+    [SerializeField] string team; // Either "player" or "enemy" for now
+    public int Defence
+    {
+        get { return defence; }
+    }
+
+    // Action logic
+    protected List<Action> submittedActions = new List<Action> { };
+    protected bool hasSubmittedAction = false;
+    public List<Action> SubmittedActions
+    {
+        get { return submittedActions; }
+    }
+
+    // temporary stats that change in the game
+    protected int health;
+    protected int damagedMaxEnergy;
+    protected int energy;
+    protected int tilesMoved = 0;
+/*    protected List<Item> equippedItems;
+*/    protected bool predicted;
+
+    // Action Source stuff
+    protected List<ActionSource> activeActionSources = new List<ActionSource> { }; // List of active action sources (self and weapons in hand. Not stuff in inventory)
+    public List<ActionSource> ActionSources
+    {
+        get { return activeActionSources; }
+    }
+
+    // Properties
+    public string DisplayName
+    {
+        get { return displayName; }
+    }
+    public int Health
+    {
+        get { return health; }
+        set { health = value; }
+    }
+    public int Str
+    {
+        get { return strength; }
+    }
+    public int Dex
+    {
+        get { return dexterity; }
+    }
+    public int Int
+    {
+        get { return intellect; }
+    }
+    public int Energy
+    {
+        get { return energy; }
+        set { energy = value; }
+    }
+    public int Speed
+    {
+        get { return speed; }
+    }
+    public float Height
+    {
+        get { return height; }
+    }
+    public float EyeHeight
+    {
+        get { return eyeHeight; }
+    }
+    public float StepHeight
+    {
+        get { return stepHeight; }
+    }
+    public GameObject Body
+    {
+        get { return body; }
+    }
+    public bool Controllable
+    {
+        get { return controllable; }
+    }
+
+    public bool Predicted
+    {
+        get { return predicted; }
+        set { predicted = value; }
+    }
+
+    public bool HasSubmittedAction
+    {
+        get { return hasSubmittedAction; }
+        set { hasSubmittedAction = value; }
+    }
+    public string Team
+    {
+        get { return team; }
+    }
+    public Tile Space
+    {
+        get { return space; }
+        set { space = value; }
+    }
+
+    // Methods
+    private void Awake()
+    {
+        // Get the value for the level spawner
+        gameManager = GameObject.FindGameObjectWithTag("GameManager");
+        levelSpawner = gameManager.GetComponent<LevelSpawner>();
+        game = gameManager.GetComponent<Game>();
+    }
+
+    // Called by a move object in DoAction()
+    // Already assumes the move is legal so don't need to check here
+    public void StartMove(Tile targetTile)
+    {
+        // Check if you would collide with something
+        if (!targetTile.IsOpen) // The target tile is open
+        {
+            // TODO: Do some stuff with bumping into things
+            // This would probably be done by Game.cs in the move phase
+            // Just a failsafe for now so things don't exist on the same tile
+            return;
+        }
+
+        this.targetTile = targetTile;
+
+        // Rotate to face the new tile before moving
+        RotateToFaceTile(targetTile);
+
+        animationController.SetBool("IsMoving", true);
+
+        // Update the gameObject's position
+        DisplayPosition();
+    }
+
+    public void DisplayMovePosition(float percentThere)
+    {
+        gameObject.transform.position = space.realPosition + (targetTile.realPosition - space.realPosition) * percentThere;
+    }
+
+    public void FinishMove()
+    {
+        // Update object references
+        space.Occupant = null;
+        space = targetTile;
+        space.Occupant = this;
+
+        targetTile = space;
+
+        DisplayPosition();
+
+        animationController.SetBool("IsMoving", false);
+    }
+
+    // When moving or attacking or doing anything targeted, face towards the target tile
+    public void RotateToFaceTile(Tile targetTile)
+    {
+        // Calculate the rotation (in degrees) (this is coppied fro LevelSpawner.TilesInCone())
+        Vector2 centerLine = new Vector2(targetTile.x - space.x, targetTile.y - space.y).normalized;
+        float originalAngleSin = Mathf.Asin(-centerLine.y); // For some reason this needs to be flipped ig (probably because tile.y = -worldSpace.Z)
+        float originalAngleCos = Mathf.Acos(centerLine.x);
+        // Make sure its in the right quadrent
+        if (originalAngleCos >= Mathf.PI / 2) // Its on the left side (where Asin is flipped)
+        {
+            originalAngleSin = Mathf.PI - originalAngleSin;
+        }
+
+        // Update the gameObject rotation
+        gameObject.transform.rotation = Quaternion.Euler(0, originalAngleSin * Mathf.Rad2Deg, 0);
+    }
+
+    // Convert the position to unity transform positiona
+    protected void DisplayPosition()
+    {
+        gameObject.transform.position = space.realPosition;
+    }
+
+    public virtual void Create(Tile space)
+    {
+        // Attatch to the first tile
+        this.space = space;
+        space.Occupant = this;
+        DisplayPosition();
+
+        // get all the different stats at correct starting ammounts
+        health = maxHealth;
+        damagedMaxEnergy = maxEnergy;
+        energy = maxEnergy;
+
+        // Give them equipment
+        activeActionSources.Add(new Self(this));
+        activeActionSources.Add(new Dagger(this));
+        activeActionSources.Add(new AOETestWeapon(this));
+        activeActionSources.Add(new Roundshield(this));
+    }
+
+    public void TakeDamage(int damage, bool canGuard)
+    {
+        // Guard if they can
+        if (canGuard)
+        {
+            damage = Guard(damage);
+        }
+
+        // Check if there is remaining damage going to the health
+        if (damage > 0)
+        {
+            // TODO: Do a concentration check
+            health -= damage;
+            Debug.Log(displayName + " took " + damage + " damage. Is now at " + health + " health");
+        }
+    }
+
+    // Subtracts damage from energy and returns how much damage is left
+    public int Guard(int damage)
+    {
+        // TODO: Check for guard specialty
+        energy -= damage;
+
+        // Check if all the energy was used up
+        if (energy < 0) // There is no energy left
+        {
+            // The extra damage is saved and energy is floored to 0
+            damage = -energy;
+            energy = 0;
+        }
+        else // All of the damage was used
+        {
+            damage = 0;
+        }
+
+        // Return the remaining damage
+        return damage;
+    }
+
+    public virtual void EndTurn()
+    {
+        // TODO: Lower cooldowns and recharges
+        foreach (ActionSource actionSource in activeActionSources)
+        {
+            actionSource.EndTurn();
+        }
+
+        UnSubmitAction();
+        UpdatePossibleTargets();
+    }
+
+
+    // TODO: Move this to an enemy class
+    public virtual void AI()
+    {
+        // Do nothing by default
+        Debug.LogError("If this version of AI() was called, then something is wrong");
+    }
+
+    public List<Creature> AllEnemies()
+    {
+        // Get a list of every creature
+        List<Creature> allCreatures = game.Creatures;
+
+        // Make an empty list of creatures and add all enemies found to it
+        List<Creature> enemies = new List<Creature> { };
+
+        // Loop through all creatures and add it to the enemy list if it is an enemy
+        foreach (Creature creature in allCreatures)
+        {
+            if (creature.Team != Team) // This creature is on another team
+            {
+                // Add it to the list of enemies
+                enemies.Add(creature);
+            }
+        }
+
+        return enemies;
+    }
+
+    public List<Creature> AllAllies()
+    {
+        // Get a list of every creature
+        List<Creature> allCreatures = game.Creatures;
+
+        // Make an empty list of creatures and add all allies found to it
+        List<Creature> allies = new List<Creature> { };
+
+        // Loop through all creatures and add it to the allies  list if it is an ally
+        foreach (Creature creature in allCreatures)
+        {
+            if (creature.Team == Team) // This creature is on the same team
+            {
+                // Add it to the list of enemies
+                allies.Add(creature);
+            }
+        }
+
+        return allies;
+    }
+
+    public virtual void SubmitAction(Action action)
+    {
+        // TODO: Make sure they're not submitting multiple major actions or a minor action in the same phase as another action
+
+        // Save the action
+        submittedActions.Add(action);
+
+        // Add the submitted action to the list
+        game.SubmitAction(action);
+    }
+
+    public virtual void UpdatePossibleTargets()
+    {
+        // TODO: Scale this to work with a list of action sources
+        foreach (ActionSource actionSource in activeActionSources)
+        {
+            actionSource.UpdatePossibleTargets();
+        }
+    }
+
+    // THESE ACTIONS ARE JUST HERE SO THE PLAYER CLASS CAN OVERWRITE THEM
+    public virtual void UnSubmitAction()
+    {
+        // Make sure they've submitted an action
+        if (!hasSubmittedAction)
+        {
+            Debug.Log("This creature has not yet submitted an action");
+            return;
+        }
+
+        // TODO: Remove submitted actions from the action stack in game.cs
+
+        // Forget all submitted actions
+        submittedActions.Clear();
+        hasSubmittedAction = false;
+
+        // 
+        DiscardAction();
+    }
+    public virtual void DiscardAction()
+    {
+        // Do nothing by default (this is mostly for the player class)
+    }
+    public virtual void DiscardActionSource()
+    {
+        // Do nothing by default (this is mostly for the player class)
+    }
+    public virtual void SelectActionSource(ActionSource newActionSource)
+    {
+        // Do nothing by default (this is mostly for the player class)
+    }
+    public virtual void SelectAction(Action newAction)
+    {
+        // Do nothing by default (this is mostly for the player class)
+    }
+}
