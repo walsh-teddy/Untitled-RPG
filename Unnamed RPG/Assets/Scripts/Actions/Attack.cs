@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Attack : Action
 {
+    protected bool shouldDisplayCritBonus;
+
     // Constructor for melee attacks
     public Attack(string displayName, int cooldownCost, int rechargeCost, int energyCost, int castTimeCost,
         int hitBonusBase, List<Game.stats> hitBonusScale, int critBonusBase, List<Game.stats> critBonusScale,
@@ -22,6 +24,9 @@ public class Attack : Action
         this.extraEffects = extraEffects;
         aoeType = aoeTypes.none;
         isAttack = true;
+
+        // Should display the crit bonus if there is a base and/or you add any stats to it
+        shouldDisplayCritBonus = !(critBonusBase == 0 && critBonusScale.Count == 0);
     }
 
     // Constructor for ranged attacks
@@ -110,5 +115,142 @@ public class Attack : Action
                 possibleTargets.Add(creature.Space);
             }
         }
+    }
+
+    protected override string FormatDescription(bool playerExists)
+    {
+        string text = "";
+
+        text += FormatRangeText();
+
+        if (playerExists) // This is in a game (don't show stats in calculations)
+        {
+            // Hit bonus
+            if (HitBonus >= 0) // Not negative
+            {
+                text += "+" + HitBonus + " to hit. ";
+            }
+            else // Negative hit bonus
+            {
+                text += HitBonus + " to hit. ";
+            }
+
+            // Crit bonus (if there is one)
+            if (shouldDisplayCritBonus)
+            {
+                if (CritBonus >= 0) // Positive crit bonus
+                {
+                    text += "+" + CritBonus + " to crit. ";
+                }
+                else // Negative crit bonus
+                {
+                    text += CritBonus + " to crit. ";
+                }
+            }
+        }
+        else // This is being shown in character creation (show stats in calculations)
+        {
+            // Hit bonus (starting with the base)
+            if (hitBonusBase >= 0) // Positive hit bonus base
+            {
+                text += "+" + hitBonusBase;
+            }
+            else // Negative hit bonus base
+            {
+                text += hitBonusBase;
+            }
+
+            // Hit bonus scales
+            foreach (Game.stats stat in hitBonusScale)
+            {
+                text += " +" + stat;
+            }
+
+            text += " to hit. ";
+
+
+            // Crit bonus
+            if (shouldDisplayCritBonus)
+            {
+                // Crit bonus base
+                if (critBonusBase >= 0) // Positive crit bonus base
+                {
+                    text += "+" + critBonusBase;
+                }
+                else // Negative crit bonus base
+                {
+                    text += critBonusBase;
+                }
+
+                // Crit bonus scales
+                foreach (Game.stats stat in critBonusScale)
+                {
+                    text += " +" + stat;
+                }
+
+                text += " to crit. ";
+            }
+        }
+
+        // Damage
+        if (damage > 0) // It can do damage
+        {
+            text += Damage + " damage. ";
+        }
+        else // It cannot do damage
+        {
+            text += "Cannot do damage. ";
+        }
+
+        // Attack properties (if any)
+        if (extraEffects.Contains(attackEffects.bonusToEnemyShieldRecharge)) // Bonus shield recharge
+        {
+            text += "Adds 1 turn recharge to a shield if it hits. ";
+        }
+        if (extraEffects.Contains(attackEffects.canBlockAOE)) // Can block AOE
+        {
+            text += "Can block AOE. ";
+        }
+        if (extraEffects.Contains(attackEffects.knockBack)) // Kockback
+        {
+            text += "Pushes target back 1 tile if it hits.";
+        }
+        if (extraEffects.Contains(attackEffects.throwWeapon)) // Thrown weapon
+        {
+            text += "Loses weapon. ";
+        }
+
+        return text;
+    }
+
+    // Making this a seperate function so AOE attacks can have their own version of it
+    protected virtual string FormatRangeText()
+    {
+        string text = "";
+
+        // Weapon range / reach
+        if (!isRanged) // Melee
+        {
+            if (range <= 1) // The attack has normal melee reach
+            {
+                text += "Melee attack. ";
+            }
+            else // The attack has extra melee reach
+            {
+                text += "Melee attack (+" + (range - 1) + " tile reach). ";
+            }
+        }
+        else // Ranged
+        {
+            text += "Ranged attack (" + closeRange + "/" + range + " tile range). ";
+        }
+
+        // If targets multiple creatures
+        if (extraEffects.Contains(attackEffects.targetThreeCreatures))
+        {
+            text += "Targets up to 3 creatures. ";
+        }
+
+        return text;
     }
 }

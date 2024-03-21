@@ -14,7 +14,7 @@ public class Creature : MonoBehaviour
 
     // Animation variables
     [SerializeField] Animator animationController;
-    protected Tile targetTile;
+    private Tile targetTile;
 
     [Header("Physical Traits")]
     [SerializeField] protected string displayName;
@@ -165,7 +165,7 @@ public class Creature : MonoBehaviour
         animationController.SetBool("IsMoving", true);
 
         // Update the gameObject's position
-        DisplayPosition();
+        DisplayMovePosition(0);
     }
 
     public void DisplayMovePosition(float percentThere)
@@ -224,9 +224,10 @@ public class Creature : MonoBehaviour
 
         // Give them equipment
         activeActionSources.Add(new Self(this));
+        activeActionSources.Add(new BastardSword1H(this));
         activeActionSources.Add(new Dagger(this));
-        activeActionSources.Add(new AOETestWeapon(this));
         activeActionSources.Add(new Roundshield(this));
+        activeActionSources.Add(new AOETestWeapon(this));
     }
 
     public void TakeDamage(int damage, bool canGuard)
@@ -343,7 +344,7 @@ public class Creature : MonoBehaviour
 
     public virtual void UpdatePossibleTargets()
     {
-        // TODO: Scale this to work with a list of action sources
+        // Update the possible targets
         foreach (ActionSource actionSource in activeActionSources)
         {
             actionSource.UpdatePossibleTargets();

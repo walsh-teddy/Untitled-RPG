@@ -21,7 +21,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] GameObject uiRootPrefab;
     [SerializeField] GameObject actionSourceButtonPrefab;
     [SerializeField] GameObject actionButtonPrefab;
-    [SerializeField] float buttonSpacing = 10f;
+    [SerializeField] float horizontalButtonSpacing = 175f;
 
     // Phase Bar
     [Header("Phase Bar")]
@@ -122,7 +122,7 @@ public class UIManager : MonoBehaviour
                 // Translate the button to the right
                 actionSource.UIButton.transform.Translate(moveSourceToRight, 0, 0);
                 // Itterate moveSourceToRight
-                moveSourceToRight += buttonSpacing;
+                moveSourceToRight += horizontalButtonSpacing;
 
                 // Change the text of the button
                 actionSource.UIButton.GetComponentInChildren<TextMeshProUGUI>().text = actionSource.DisplayName;
@@ -133,16 +133,15 @@ public class UIManager : MonoBehaviour
                 {
                     // Create a button for the action (childed to the action source root)
                     // TODO: Make a button prefab
-                    action.UIButton = Instantiate(actionButtonPrefab, actionSource.UIRoot.transform);
-                    action.UIButton.name = action.DisplayName + "UIButton"; // TODO: Remove this (this is for debugging)
+                    action.UIButton = Instantiate(actionButtonPrefab, actionSource.UIRoot.transform).GetComponent<uiActionButton>();
 
                     // Translate the button to the right
                     action.UIButton.transform.Translate(moveActionToRight, 0, 0);
                     // Itterate moveSourceToRight
-                    moveActionToRight += buttonSpacing;
+                    moveActionToRight += horizontalButtonSpacing;
 
-                    // Change the text of the button
-                    action.UIButton.GetComponentInChildren<TextMeshProUGUI>().text = action.DisplayName;
+                    // Tell the button to run all of its initialization code (update its display name and stuff)
+                    action.UIButton.Create(action);
                 }
             }
         }

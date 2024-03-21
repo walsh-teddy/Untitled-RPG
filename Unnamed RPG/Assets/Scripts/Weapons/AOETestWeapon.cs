@@ -13,7 +13,7 @@ public class AOETestWeapon : Weapon
         {
             new AOEAttack(
                 "Fireball", // Display name
-                0, 0, 0, 0, // Costs
+                3, 0, 0, 0, // Costs
                 +0, new List<Game.stats>{ }, // Hit bonus
                 +0, new List<Game.stats>{ }, // Crit bonus
                 1, // Damage
@@ -23,7 +23,7 @@ public class AOETestWeapon : Weapon
             ), 
             new AOEAttack(
                 "Cone of Cold", // Display name
-                0, 0, 0, 0, // Costs
+                1, 0, 0, 0, // Costs
                 +0, new List<Game.stats>{ }, // Hit bonus
                 +0, new List<Game.stats>{ }, // Crit bonus
                 1, // Damage
@@ -52,7 +52,7 @@ public class AOETestWeapon : Weapon
                 new List<Action.attackEffects> { } // Extra effects
             ), 
             new AOEAttack(
-                "Thunder wave", // Display name
+                "Thunderwave", // Display name
                 0, 0, 0, 0, // Costs
                 +0, new List<Game.stats>{ }, // Hit bonus
                 +0, new List<Game.stats>{ }, // Crit bonus

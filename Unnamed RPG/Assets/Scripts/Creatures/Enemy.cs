@@ -8,6 +8,8 @@ public class Enemy : Creature
 
     public override void AI()
     {
+        // TODO: uhhhhhhhhhhhhhhhhhhhhhhhhhh
+
         // Get a list of every player in range
         List<Tile> validTargets = activeActionSources[0].ActionList[1].PossibleTargets;
 

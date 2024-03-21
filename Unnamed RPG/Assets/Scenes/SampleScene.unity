@@ -1219,7 +1219,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff7f4d73c17c9ea4aab085f6efde56d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: Assets/Maps/Map4.txt
+  mapFile: assets/Maps/Map4.txt
   tileSize: 1
   playerPreafab: {fileID: 3187343870214836086, guid: a1109eddb245d8642aeae5de22f578db, type: 3}
   testPlayerPreafab: {fileID: 3187343870214836086, guid: f2dc94c8c8c695f40bd5a04b40527895, type: 3}
@@ -1255,6 +1255,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraFocus: {fileID: 1619683412}
+  moveAnimationTime: 1
+  moveAnimationPauseTime: 0.25
+  attackAnimationTime: 2
+  attackAnimationPause: 0.25
 --- !u!114 &695018030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1276,9 +1280,9 @@ MonoBehaviour:
   buttonOriginLocation: {fileID: 1003636550}
   testTextPrefab: {fileID: 7093483905735591228, guid: 12123bf45429f0d4ea1076f8d8b8ce29, type: 3}
   uiRootPrefab: {fileID: 7515284594541056096, guid: e9e57cb041865be46aee2de4960534ba, type: 3}
-  actionSourceButtonPrefab: {fileID: 8708347917502454963, guid: 325b5446d7fd143408dc48748d427d83, type: 3}
+  actionSourceButtonPrefab: {fileID: 8708347917502454963, guid: 174f96bef1c672041a70d0497c561948, type: 3}
   actionButtonPrefab: {fileID: 8708347917502454963, guid: 325b5446d7fd143408dc48748d427d83, type: 3}
-  buttonSpacing: 175
+  horizontalButtonSpacing: 175
   PredictedDescisionBarFaded: {fileID: 1735987457}
   PredictedDescisionBarFull: {fileID: 1392495143}
   decisionBarFaded: {fileID: 292457115}

@@ -102,7 +102,6 @@ public class Player : Creature
         selectedActionSource = newActionSource;
         game.CurrentState = Game.gameState.playerActionSourceSelectAction;
     }
-
     public void SubmitActionButton()
     {
         // Check that it hasn't submitted an action already this turn
@@ -120,11 +119,18 @@ public class Player : Creature
 
         SubmitAction(selectedAction);
     }
-
     public override void AI()
     {
         // Do nothing (AI() is just there for NPC classes)
     }
+    public override void EndTurn()
+    {
+        base.EndTurn();
 
-
+        // Update the UI of each action
+        foreach (ActionSource actionSource in activeActionSources)
+        {
+            actionSource.UpdateUI();
+        }
+    }
 }

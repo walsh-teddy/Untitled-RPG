@@ -11,6 +11,31 @@ public class Self : ActionSource
         new List<Action>
         {
             new Move(),
+            new Move(
+                "Dash", // Display name
+                0, 0, 1, 0, // Costs
+                false, // Is Minor Action
+                Game.phase.move, // Phase
+                2, // Speed Change
+                false // Speed overwrite
+            ),
+            new Move(
+                "Step", // Display name
+                0, 1, 1, 0, // Costs
+                true, // Is Minor Action
+                Game.phase.move, // Phase
+                1, // Speed Change
+                true // Speed overwrite
+            ),
+            // TODO: Make prep phase movement work lmao
+/*            new Move(
+                "Dive", // Display name
+                0, 2, 1, 0, // Costs
+                false, // Is Minor Action
+                Game.phase.prep, // Phase
+                1, // Speed Change
+                true // Speed overwrite
+            ),*/
             new Attack(
                 "Punch", // Display name
                 0, 0, 0, 0, // Costs

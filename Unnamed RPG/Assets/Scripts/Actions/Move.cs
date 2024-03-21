@@ -170,4 +170,52 @@ public class Move : Action
         base.EndTurn();
         currentTileIndex = 1;
     }
+
+    protected override string FormatDescription(bool playerExists)
+    {
+        string text = "";
+
+        if (playerExists) // This is being done in a game
+        {
+            if (speed != 1) // Plural tiles
+            {
+                text += "Move " + speed + " tiles. ";
+            }
+            else // Singular tile
+            {
+                text += "Move 1 tile. ";
+            }
+        }
+        else // This is being done in a menu
+        {
+            if (speedOverwrite) // SpeedChange is the new set speed
+            {
+                if (speedChange != 1) // Plural tiles
+                {
+                    text += "Move " + speedChange + " tiles. ";
+                }
+                else // Singular tile
+                {
+                    text += "Move 1 tile. ";
+                }
+            }
+            else // SpeedChange is an adition to source.owner.speed
+            {
+                text += "Move speed";
+
+                if (speedChange > 0) // There is a speed bonus
+                {
+                    text += " +" + speedChange;
+                }
+                else if (speedChange < 0) // There is a speed penalty
+                {
+                    text += " " + speedChange;
+                }
+
+                text += " tiles. ";
+            }
+        }
+
+        return text;
+    }
 }

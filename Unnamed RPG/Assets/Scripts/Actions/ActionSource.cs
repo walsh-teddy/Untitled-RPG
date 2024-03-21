@@ -123,6 +123,14 @@ public class ActionSource
         }
     }
 
+    public void UpdateUI()
+    {
+        foreach (Action action in actionList)
+        {
+            action.UpdateUI();
+        }
+    }
+
     private void ButtonClick ()
     {
         owner.SelectActionSource(this);

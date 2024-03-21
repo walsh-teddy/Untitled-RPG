@@ -233,8 +233,9 @@ public class LevelSpawner : MonoBehaviour
         // Make sure its in bounds
         if (RealPointOnMap(pointerPosition)) // It is in bounds
         {
-            Vector2 position2D = new Vector2(Mathf.Floor(pointerPosition.x + tileSize / 2), Mathf.Floor(pointerPosition.z + tileSize / 2))/tileSize;
-            return map[(int)position2D.x, (int)position2D.y];
+            int x = (int)(Mathf.Floor(pointerPosition.x + tileSize / 2) / tileSize);
+            int y = (int)(Mathf.Floor(pointerPosition.z + tileSize / 2) / tileSize);
+            return map[x,y];
         }
         else // Its out of bounds
         {

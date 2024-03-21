@@ -8,7 +8,7 @@ public class AOEAttack : Attack
     public AOEAttack(string displayName, int cooldownCost, int rechargeCost, int energyCost, int castTimeCost,
         int hitBonusBase, List<Game.stats> hitBonusScale, int critBonusBase, List<Game.stats> critBonusScale,
         int damage, aoeTypes aoeType, float range, float aoeReach, float aoeAngle, float aoeHeight, List<attackEffects> extraEffects)
-        : base(displayName, rechargeCost, cooldownCost, energyCost, castTimeCost, hitBonusBase, hitBonusScale, 
+        : base(displayName, cooldownCost, rechargeCost, energyCost, castTimeCost, hitBonusBase, hitBonusScale, 
             critBonusBase, critBonusScale, damage, range, extraEffects)
     {
         // AOE Variables
@@ -65,7 +65,7 @@ public class AOEAttack : Attack
         if (aoeType == aoeTypes.circle)
         {
             possibleSpaces = source.LevelSpawnerRef.LineOfSight(
-                source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f), source.Owner, true);
+                source.LevelSpawnerRef.TilesInRange(source.Owner, range + 0.5f), source.Owner, true);
         }
 
         // Do nothing if the target tile is the player's space (resting state) unless its a circle with a range of 0
@@ -126,5 +126,43 @@ public class AOEAttack : Attack
     {
         // This function already covers all the logic of making sure people are still in range and within line of sight
         SetTarget(aoeTargetTile);
+    }
+
+    protected override string FormatRangeText()
+    {
+        string text = "AOE attack. ";
+
+        // Have different text depending on the type
+        switch (aoeType)
+        {
+            case aoeTypes.circle:
+                text += aoeReach + " tile circle. " + range + " tile range. ";
+                break;
+
+            case aoeTypes.cone:
+                if (range < 100) // has limited range
+                {
+                    text += range + " tile cone. " + aoeAngle + " degrees. ";
+                }
+                else // has unlimited range
+                {
+                    text += "Cone. " + aoeAngle + " degrees. ";
+                }
+                
+                break;
+
+            case aoeTypes.line:
+                if (range < 100) // has limited range
+                {
+                    text += range + " tile line. " + aoeReach + " tile width. ";
+                }
+                else // has unlimited range
+                {
+                    text += "Line. " + aoeReach + " tile width. ";
+                }
+                break;
+        }
+
+        return text;
     }
 }

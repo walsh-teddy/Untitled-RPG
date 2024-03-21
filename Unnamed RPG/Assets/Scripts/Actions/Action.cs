@@ -27,15 +27,11 @@ public class Action
     protected List<Tile> possibleTargets = new List<Tile> { }; // Every possible space that could be targeted with this action
     public enum attackType { attack, move, buff, summon}; // TODO: This will probably become relevant at some point
                                                           // UI stuff
-    GameObject uiButton; // Empty object thats turned on and off to turn the buttons for the action source buttons on and off (off when an action is selected)
-    public GameObject UIButton
+    uiActionButton uiButton; // Empty object thats turned on and off to turn the buttons for the action source buttons on and off (off when an action is selected)
+    public uiActionButton UIButton
     {
         get { return uiButton; }
-        set 
-        {
-            uiButton = value;
-            uiButton.GetComponent<Button>().onClick.AddListener(ButtonClick);
-        }
+        set { uiButton = value; }
     }
     public Game.phase Phase
     {
@@ -91,7 +87,6 @@ public class Action
     {
         get { return (targets.Count != 0); }
     }
-
 
 
     // -=-=-=-= ATTACK SPECIFIC VARIABLES (AND PROPERTIES) =-=-=-=-
@@ -327,11 +322,6 @@ public class Action
         aoeTilesWithCreature.Clear();
     }
 
-    private void ButtonClick()
-    {
-        source.Owner.SelectAction(this);
-    }
-
     // Called by game.cs before attacks are made
     // Checks if all the targets are still in range (targets could dodge out of range or behind cover)
     public virtual void CheckTargetsStillInRange()
@@ -360,5 +350,48 @@ public class Action
     public virtual void RollToHit()
     {
         rolledAttack = Random.Range(1, 21);
+    }
+
+    public virtual string FormatDisplayText(bool playerExists)
+    {
+        // Add the header
+        string text = displayName;
+        text += "\n" + phase + " phase";
+
+        // Add the description
+        text += "\n" + FormatDescription(playerExists);
+
+        // Add the costs if there are them
+        if (energyCost > 0) // there is an energy cost
+        {
+            text += "\nCosts " + energyCost + " energy";
+        }
+        if (cooldownCost > 0) // There is a cooldown cost
+        {
+            text += "\n" + cooldownCost + " turn cooldown";
+        }
+        if (rechargeCost > 0) // There is a recharge cost
+        {
+            text += "\n" + rechargeCost + " turn recharge";
+        }
+        if (isMinorAction) // It is a minor action
+        {
+            text += "\nMinor action";
+        }
+
+        return text;
+    }
+
+    // Called at the end of constructors (not the base constructor though)
+    // playerExists = false when in character creation and it should show what stats go into the attack bonuses and stuff
+    protected virtual string FormatDescription(bool playerExists)
+    {
+        return "";
+    }
+
+    // Change the button if the action is on cooldown
+    public virtual void UpdateUI()
+    {
+        uiButton.UpdateUI();
     }
 }
