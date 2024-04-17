@@ -10,13 +10,11 @@ public class Pointer : MonoBehaviour
 {
     // Variables
     private Vector3 screenPosition;
-    private Vector3 worldPosition;
-    private Camera camera;
+    private Camera mainCamera;
     LevelSpawner levelSpawner;
     UIManager uiManager;
     PlayerManager playerManager;
     Game game;
-    public Animator testCubeAnimator;
 
     [Header("Raycasting")]
     [SerializeField] LayerMask layersToHit;
@@ -50,11 +48,15 @@ public class Pointer : MonoBehaviour
         // Get the value for other scripts
         levelSpawner = gameObject.GetComponent<LevelSpawner>();
         uiManager = gameObject.GetComponent<UIManager>();
-        playerManager = gameObject.GetComponent<PlayerManager>();
         game = gameObject.GetComponent<Game>();
 
         // Save the camera
-        camera = Camera.main;
+        mainCamera = Camera.main;
+    }
+
+    private void Start()
+    {
+        playerManager = game.PlayerManager;
     }
 
     private void OnEnable()
@@ -80,7 +82,7 @@ public class Pointer : MonoBehaviour
     {
         // Raycast to the tile map
         screenPosition = Mouse.current.position.ReadValue();
-        Ray ray = camera.ScreenPointToRay(screenPosition);
+        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
         Vector3 worldPosition = new Vector3(0, HIGH_NUMBER, 0);
 
         // Check if it is clickin on the UI
@@ -126,6 +128,12 @@ public class Pointer : MonoBehaviour
                                 hoveringTileInAList // Heavy Highlight
                             );
                         }
+                        else if (playerManager.SelectedPlayer.SelectedAction.PossibleSpaces.Contains(hoveringTile) && playerManager.SelectedPlayer.SelectedAction.CanSelectSpaces) // Hovering over a possible space for an ability where that should be highlighted
+                        {
+                            levelSpawner.HighlightTiles(
+                                hoveringTileInAList // Heavy Highlight
+                            );
+                        }
                         else // The hovering tile is not one of the valid moves
                         {
                             // Don't heavy highlight any tiles
@@ -148,7 +156,6 @@ public class Pointer : MonoBehaviour
 
     private void LeftClick(InputAction.CallbackContext context)
     {
-
         // Make sure the mouse is pointing at the map and not the UI
         if (hoveringTile == null) // its pointing at the UI
         {

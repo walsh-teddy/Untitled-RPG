@@ -14,7 +14,7 @@ public class Dagger : Weapon
             // List out every action
             new Attack(
                 "Slash", // Display name
-                0, 1, 1, 0, // Costs
+                1, 0, 1, 0, // Costs
                 +0, new List<Game.stats> {Game.stats.dexterity}, // Hit bonus
                 +0, new List<Game.stats> {}, // Crit bonus
                 1, // Damage
@@ -23,7 +23,7 @@ public class Dagger : Weapon
             ),
             new Attack(
                 "Stab", // Display name
-                1, 0, 1, 0, // Costs
+                0, 1, 1, 0, // Costs
                 -2, new List<Game.stats> {Game.stats.dexterity}, // Hit bonus
                 +6, new List<Game.stats> {Game.stats.dexterity}, // Crit bonus
                 2, // Damage
@@ -32,7 +32,7 @@ public class Dagger : Weapon
             ),
             new Attack(
                 "Throw", // Display name
-                0, 0, 1, 0, // Costs
+                0, 2, 1, 0, // Costs
                 +2, new List<Game.stats> {Game.stats.dexterity}, // Hit bonus
                 -1, new List<Game.stats> {Game.stats.dexterity}, // Crit bonus
                 1, // Damage

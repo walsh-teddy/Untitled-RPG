@@ -65,7 +65,6 @@ public class CameraFocus : MonoBehaviour
         gameManager = GameObject.FindGameObjectWithTag("GameManager");
         levelSpawner = gameManager.GetComponent<LevelSpawner>();
         game = gameManager.GetComponent<Game>();
-        playerManager = gameManager.GetComponent<PlayerManager>();
     }
 
     private void OnEnable()
@@ -122,6 +121,8 @@ public class CameraFocus : MonoBehaviour
     
     void Start()
     {
+        playerManager = game.PlayerManager;
+
         // Store initial positions and rotations
         directionTowardsCamera = (camera.transform.position - transform.position).normalized;
         originalRotation = camera.transform.rotation;
@@ -146,8 +147,8 @@ public class CameraFocus : MonoBehaviour
     public void MoveTo (Creature target)
     {
         // Move the pointer
-        targetPosition.x = target.Space.realPosition.x;
-        targetPosition.y = target.Space.realPosition.z;
+        targetPosition.x = target.Space.RealPosition.x;
+        targetPosition.y = target.Space.RealPosition.z;
     }
 
     void Move()
@@ -276,8 +277,8 @@ public class CameraFocus : MonoBehaviour
                 playerManager.SelectedPlayer.Body.SetActive(false);
 
                 // Move camera to target player's location
-                realPosition = playerManager.SelectedPlayer.Space.realPosition;
-                targetPosition = new Vector2(playerManager.SelectedPlayer.Space.realPosition.x, playerManager.SelectedPlayer.Space.realPosition.z);
+                realPosition = playerManager.SelectedPlayer.Space.RealPosition;
+                targetPosition = new Vector2(playerManager.SelectedPlayer.Space.RealPosition.x, playerManager.SelectedPlayer.Space.RealPosition.z);
 
                 break;
 
@@ -373,9 +374,9 @@ public class CameraFocus : MonoBehaviour
 
                 // Update position (in the eyespace of the target player)
                 camera.transform.position = new Vector3(
-                    playerManager.SelectedPlayer.Space.realPosition.x,
+                    playerManager.SelectedPlayer.Space.RealPosition.x,
                     playerManager.SelectedPlayer.EyeHeight + playerManager.SelectedPlayer.Space.Height,
-                    playerManager.SelectedPlayer.Space.realPosition.z
+                    playerManager.SelectedPlayer.Space.RealPosition.z
                 );
 
                 // Look horrizontal
@@ -383,7 +384,7 @@ public class CameraFocus : MonoBehaviour
                 //camera.transform.RotateAround(camera.transform.position, Vector3.right, 90f);
 
                 // Rotate around axis
-                camera.transform.RotateAround(playerManager.SelectedPlayer.Space.realPosition, Vector3.up, rotation);
+                camera.transform.RotateAround(playerManager.SelectedPlayer.Space.RealPosition, Vector3.up, rotation);
 
                 break;
         }

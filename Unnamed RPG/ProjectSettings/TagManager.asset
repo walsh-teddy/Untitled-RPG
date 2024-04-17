@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - GameManager
+  - CameraFocus
+  - MainMenu
+  - Interscene
   layers:
   - Default
   - TransparentFX

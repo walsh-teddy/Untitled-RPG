@@ -22,10 +22,10 @@ public class Rapier : Weapon
             ),
             new Attack(
                 "Stab", // Display name
-                1, 0, 1, 0, // Costs
+                0, 1, 1, 0, // Costs
                 +3, new List<Game.stats> {Game.stats.dexterity}, // Hit bonus
                 +4, new List<Game.stats> {Game.stats.dexterity}, // Crit bonus
-                2, // Damage
+                3, // Damage
                 1, // Range
                 new List<Action.attackEffects> {} // Extra effects
             ),

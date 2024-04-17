@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Game : MonoBehaviour
 {
@@ -13,17 +14,19 @@ public class Game : MonoBehaviour
     public List<Weapon> thrownWeapons = new List<Weapon> { };
     UIManager uiManager;
     LevelSpawner levelSpawner;
-    PlayerManager playerManager;
+    PlayerManager playerManager; // Included in teamMangers
+    Dictionary<string, TeamManager> teams = new Dictionary<string, TeamManager> { };
     Pointer pointer;
     [SerializeField] CameraFocus cameraFocus;
-    List<Creature> creatures = new List<Creature> { };
+    List<Creature> creatures = new List<Creature> { }; // Only contains the living creatures
+    List<Creature> deadCreatures = new List<Creature> { };
     List<Creature> creaturesToDecideAction = new List<Creature> { };
     static List<Action> actionStack = new List<Action> { };
     List<Action> actionsThisPhase = new List<Action> { };
     // Used in the attack phase to know which attacks are contested by what
     List<AttackLine> attackLinesThisRound = new List<AttackLine> { };
     List<Tile> possibleTargetsThisRound = new List<Tile> { };
-    public const int CLASH_ATTACK_WINDOW = 1; // If 2 attacks roll within 1 of eachother, then they clash
+    [SerializeField] public const int CLASH_ATTACK_WINDOW = 1; // If 2 attacks roll within 1 of eachother, then they clash
 
     [Header("Animation")]
     [SerializeField] float moveAnimationTime = 1; // Time (in seconds) that a move animation takes
@@ -128,6 +131,14 @@ public class Game : MonoBehaviour
     {
         get { return thrownWeapons; }
     }
+    public Dictionary<string, TeamManager> Teams
+    {
+        get { return teams; }
+    }
+    public PlayerManager PlayerManager
+    {
+        get { return playerManager; }
+    }
 
     // METHODS
     private void Awake()
@@ -135,10 +146,13 @@ public class Game : MonoBehaviour
         // Set up variables
         uiManager = gameObject.GetComponent<UIManager>();
         levelSpawner = gameObject.GetComponent<LevelSpawner>();
-        playerManager = gameObject.GetComponent<PlayerManager>();
         pointer = gameObject.GetComponent<Pointer>();
 
         currentPhase = phase.predictedDescision;
+
+        // Put the player manager in the dictionary of team managers
+        playerManager = new PlayerManager();
+        teams.Add("player", playerManager);
     }
     private void Start()
     {
@@ -185,7 +199,11 @@ public class Game : MonoBehaviour
     // A new creature was created and should be added to the list
     public void NewCreature(Creature newCreature)
     {
+        // Record this creature in a list
         creatures.Add(newCreature);
+
+        // Assign it a team manager
+        AddToTeam(newCreature);
     }
 
     public void LevelComplete()
@@ -233,7 +251,7 @@ public class Game : MonoBehaviour
                 // Loop through all creatures yet to decide and ask them for an action
                 foreach (Creature creature in creaturesToDecideAction)
                 {
-                    // creature.SubmitAction();
+                    creature.AI();
                 }
                 break;
 
@@ -441,6 +459,21 @@ public class Game : MonoBehaviour
     private void NewRound()
     {
         // TODO: Delete creatures who died
+        foreach (Creature creature in creatures)
+        {
+            if (!creature.IsAlive)
+            {
+                deadCreatures.Add(creature);
+            }
+        }
+        // Have to put it in a seperate loop because you can't change whats in a list while itterating through it
+        foreach (Creature creature in deadCreatures)
+        {
+            creatures.Remove(creature);
+
+            creature.Die();
+        }
+        deadCreatures.Clear();
 
         // Lower cooldowns and recharges of remaining creatures
         foreach (Creature creature in creatures)
@@ -473,21 +506,28 @@ public class Game : MonoBehaviour
     }
     private void MoveNextStep()
     {
-        Debug.Log("MoveNextStep()");
-
         // Test if there are any moves left
         if (currentMoveStep > longestMove) // There are no moves left
         {
+            foreach (Action move in actionsThisPhase)
+            {
+                move.DoAction();
+            }
             NextPhase();
             return;
         }
 
-        // TODO: Test if any moves would collide
+        // Test if any moves would collide
+        foreach (Action move in actionsThisPhase)
+        {
+            // TODO: Make this work lol
+            //move.CheckCollision(creatures);
+        }
 
         // Tell each move action to go
         foreach (Action move in actionsThisPhase)
         {
-            move.DoAction();
+            move.PlayAnimation();
         }
 
         // Start the timer
@@ -506,8 +546,6 @@ public class Game : MonoBehaviour
     // Called once the move timer is done
     private void FinishMove()
     {
-        Debug.Log("FinishMove()");
-
         // Tell each creature they reached the end of this move
         foreach (Action move in actionsThisPhase)
         {
@@ -520,11 +558,76 @@ public class Game : MonoBehaviour
     // Called once the pause between moves is done
     private void FinishMovePause()
     {
-        Debug.Log("FinishMovePause()");
-
         currentMoveStep += 1;
 
         MoveNextStep();
     }
     
+    // Create or add to an existing team manager
+    public void AddToTeam(Creature creature)
+    {
+        // Test if a new team manager needs to be created
+        if (!teams.ContainsKey(creature.Team)) // The team manager doesn't yet exist
+        {
+            // Create the new team manager
+            teams.Add(creature.Team, new TeamManager(creature.Team));
+        }
+
+        // Add the creature to the team manager
+        teams[creature.Team].AddTeamMember(creature);
+        // The creature records the team manager in AddTeamMember() in TeamManager.cs
+    }
+
+    public Creature StatTest(Creature creature1, Creature creature2, Game.stats stat)
+    {
+        // Roll the dice
+        int creature1Roll = Random.Range(1, 21);
+        int creature2Roll = Random.Range(1, 21);
+
+        // Assign the propper stat bonuses
+        switch (stat)
+        {
+            case stats.strength:
+                creature1Roll += creature1.Str;
+                creature2Roll += creature2.Str;
+                break;
+            case stats.dexterity:
+                creature1Roll += creature1.Dex;
+                creature2Roll += creature2.Dex;
+                break;
+            case stats.intellect:
+                creature1Roll += creature1.Int;
+                creature2Roll += creature2.Int;
+                break;
+        }
+
+        // Compare the rolls
+        // TODO: Maybe have a window for contested rolls, same as clash attacks (or just use the clash attack window)
+        if (creature1Roll > creature2Roll) // Creature 1 won
+        {
+            Debug.Log(stat + " test between " + creature1.DisplayName + " and " + creature2.DisplayName + ". " + creature1.DisplayName + " won!");
+            return creature1;
+        }
+        else if (creature2Roll > creature1Roll) // Creature 2 won
+        {
+            Debug.Log(stat + " test between " + creature1.DisplayName + " and " + creature2.DisplayName + ". " + creature2.DisplayName + " won!");
+            return creature2;
+        }
+        else // It was a tie
+        {
+            Debug.Log(stat + " test between " + creature1.DisplayName + " and " + creature2.DisplayName + ". Tie!");
+            // TODO: Find a better way to resolve this lol
+            return null;
+        }
+    }
+
+    public void BackToMainMenu()
+    {
+        SceneManager.LoadScene("Main Menu");
+
+    }
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }

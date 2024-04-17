@@ -13,7 +13,7 @@ public class Handaxe : Weapon
         {
             new Attack(
                 "Slash", // Display name
-                0, 0, 0, 0, // Costs
+                0, 1, 1, 0, // Costs
                 +5, new List<Game.stats> {Game.stats.strength}, // Hit bonus
                 +0, new List<Game.stats> {}, // Crit bonus
                 2, // Damage

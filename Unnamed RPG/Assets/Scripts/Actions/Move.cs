@@ -4,13 +4,42 @@ using UnityEngine;
 
 public class Move : Action
 {
-    // Atributes
-    protected int speed = 0; // Normally just source.Owner.Speed. Can be 1 (in the case of step) or source.Owner.Speed + 2 in the case of dash
-    protected int currentTileIndex = 1; // Always starts on 1 because index 0 is the starting tile (and we don't move to that)
+    protected float speed = 0; // How far this can go. Assigned in the constructor
 
     // Variables passed in to the constructor
     protected int speedChange; // Either the new speed (ignoring the owner's) or the change to the owner's speed (depending on speedOverwrite)
     protected bool speedOverwrite; // If true, the speed change will become the new speed. Else it will add onto the owner's speed
+
+    // Used for dijkstra searching (creating 1 and reusing it to avoid memory leaks)
+    List<checkedTile> openList = new List<checkedTile> { };
+    List<checkedTile> closedList = new List<checkedTile> { };
+    List<checkedTile> foundPath = new List<checkedTile> { };
+    checkedTile currentCheckedTile;
+    // Wrapper used in dijkstra searching
+    protected class checkedTile
+    {
+        public Tile tile; // The tile being looked at
+        public checkedTile beforeTile; // What tile came before this
+        public float length; // The distance from the start to get here
+        public int step; // The amount of moves that have come before this
+
+        public checkedTile(Tile tile, checkedTile beforeTile, float length, int step)
+        {
+            this.tile = tile;
+            this.beforeTile = beforeTile;
+            this.length = length;
+            this.step = step;
+        }
+    }
+
+    // Temp variables used in movement and animations
+    protected float currentMoveLength = 0;
+
+    // Properties
+    public Tile CurrentTile
+    {
+        get { return targets[targets.Count - 1]; }
+    }
 
     // Default Constructor
     public Move()
@@ -19,6 +48,8 @@ public class Move : Action
         speedChange = 0;
         speedOverwrite = false;
         isMove = true;
+
+        canSelectSpaces = true;
     }
 
     // Constructor for special types of move
@@ -28,15 +59,19 @@ public class Move : Action
         this.speedChange = speedChange;
         this.speedOverwrite = speedOverwrite;
         isMove = true;
+
+        canSelectSpaces = true;
     }
 
     // Called by game.cs multiple times (possibly more than the move)
-    public override void DoAction()
+    public override void PlayAnimation()
     {
-
         // Don't do anything if there are no tiles left
-        if (currentTileIndex >= targets.Count) // There are no tiles left
+        // TODO: end the move early if its open for now while movement collision isn't programmed yet
+        if (currentTileIndex >= targets.Count || !Targets[currentTileIndex].IsOpen) // || !source.Owner.MovingThisPhase) // There are no tiles left or the move was interrupted
         {
+            moveFinished = true;
+            source.Owner.MovingThisPhase = false;
             return;
         }
 
@@ -47,59 +82,148 @@ public class Move : Action
         currentTileIndex += 1;
     }
 
+    // Check if this move will collide with any other moves
+    public override void CheckCollision(List<Creature> allCreatures)
+    {
+        Debug.Log(displayName + " from " + source.Owner.DisplayName + " CheckCollision() called at index " + currentTileIndex);
+        // TODO: Have a chance to push stationary targets back
+
+        if (currentTileIndex == 1)
+        {
+            source.Owner.MovingThisPhase = true;
+        }
+
+        // Don't do anything if this move is already finished
+        if (moveFinished || !source.Owner.MovingThisPhase) // This is not going to be moving this step
+        {
+            Debug.Log("Move already stopped");
+            return;
+        }
+        foreach (Creature creature in allCreatures)
+        {
+            // Make sure this isn't looking at itself
+            if (creature == source.Owner) // It is looking at itself
+            {
+                Debug.Log("Move looking at itself");
+                continue;
+            }
+
+            // Test if they will go to the same spot
+            if (StepAtIndex(currentTileIndex) == creature.PlannedMovement[1][currentTileIndex]) // They are going to collide
+            {
+                // If the other move is finished, this one automatically stops moving
+                // TODO: Make pushing stationary targets possible
+                if (!creature.MovingThisPhase)
+                {
+                    // Interrupt this move
+                    source.Owner.MovingThisPhase = false;
+                }
+                else // Both of them are moving
+                {
+                    // Have them roll against eachother
+                    Creature winner = source.GameRef.StatTest(source.Owner, creature, Game.stats.strength);
+
+                    // Test who won
+                    if (winner == source.Owner) // This creature won
+                    {
+                        // Interrupt the other move
+                        creature.MovingThisPhase = false;
+                    }
+                    else if (winner == creature) // The other creature won
+                    {
+                        // Interrupt this move
+                        source.Owner.MovingThisPhase = false;
+                    }
+                    else // It was a tie
+                    {
+                        // Interrupt both moves
+                        creature.MovingThisPhase = false;
+                        source.Owner.MovingThisPhase = false;
+                    }
+                }
+            }
+        }
+    }
+
     // Add a tile to the list if its a valid move
     public override void SetTarget(Tile target)
     {
-        // Check if the player has any speed left
-        if (targets.Count >= speed + 1) // +1 because the curentMoveList includes the starting tile
+        // Check if the tile is imediately next to them
+        if (possibleTargets.Contains(target)) // It is imediately next to the player
         {
-            Debug.Log("Illegal move. Reached max speed");
-            return;
+            // Add the tile to the list
+            currentMoveLength += CurrentTile.ConnectionLength(target);
+            targets.Add(target);
         }
-
-        // Check if the move is legal from the most recent point
-        if (!possibleTargets.Contains(target))
+        else // It was not in possibleTargets
         {
-            return;
-        }
+            // Go back through the path to get here and add each tile in reverse order
+            
+            // Find the tile in the closed list (saved in currentCheckedTile to reuse a variable)
+            foreach (checkedTile tile in closedList)
+            {
+                if (tile.tile == target) // This is the tile we're looking for
+                {
+                    // Save this tile
+                    currentCheckedTile = tile;
+                    break;
+                }
+            }
 
-        // Add the tile to the list
-        targets.Add(target);
+            // Add each tile in the path to a list (it will be backwards)
+            foundPath.Clear();
+            while (currentCheckedTile != null)
+            {
+                // Add this to a list to be read backwards later
+                foundPath.Add(currentCheckedTile);
+
+                // Move backwards one step
+                currentCheckedTile = currentCheckedTile.beforeTile;
+            }
+
+
+            // Go throuh the foundPath list backwards to add each tile in the right order to the move list
+            for (int i = foundPath.Count - 2; i >= 0; i--)
+            {
+                // Check to make sure the tile is within speed distance
+                if (IsMoveWithinSpeed(foundPath[i]))
+                {
+                    targets.Add(foundPath[i].tile);
+                }
+            }
+
+            // Update the current move length (the final length calculated at the end of foundPath (or begining, rather) is the total length
+            currentMoveLength = foundPath[0].length;
+        }
 
         // Update the list of valid next steps (just update it here rather than calculating every frame)
         UpdatePossibleTargets();
     }
 
-    public bool IsMoveLegal(Tile target)
+    public bool IsMoveLegal(Tile target, Tile current)
     {
-        // Test if they have enough speed left (Count - 1 because it always includes the starting space)
-        if (targets.Count - 1 >= speed)
-        {
-            return false;
-        }
-
-        // Test if they're not adjacent
-        if (!source.LevelSpawnerRef.IsTileAdjacent(targets[targets.Count - 1], target))
+        // Test if they're not connected
+        if (!target.IsConnected(current)) // It is not connected
         {
             return false;
         }
 
         // Test if its the same tile
-        if (targets[targets.Count - 1] == target)
+        if (current == target)
         {
             //Debug.Log("Illegal move. Same tile");
             return false;
         }
 
-        // Test if its occupied
-        if (!target.IsOpen)
+        // Test if its occupied by an obstacle (creatures can move / be pushed)
+        if (target.HasObstacle) // There is an obstacle in the way
         {
             //Debug.Log("Illegal move. Space is occupied");
             return false;
         }
 
         // Test if its too high
-        if (target.Height - targets[targets.Count - 1].Height > source.Owner.StepHeight)
+        if (target.Height - current.Height > source.Owner.StepHeight)
         {
             //Debug.Log("Illegal move. Too high of a step");
             return false;
@@ -107,6 +231,11 @@ public class Move : Action
 
         // If it has not returned false yet, then its a legal move, so return true
         return true;
+    }
+
+    protected bool IsMoveWithinSpeed(checkedTile tile)
+    {
+        return (int)tile.length <= speed;
     }
 
     public override void UpdatePossibleTargets()
@@ -118,23 +247,118 @@ public class Move : Action
         {
             SetUpVariables();
         }
-        // LIGHT HIGHLIGHT
-        // TODO: Light highlight every possible tile within remaining move speed
 
-        // MEDIUM HIGHLIGHT
-        // Clear the old list
-        possibleTargets.Clear();
-        
-        // Loop through all adjasent tiles to the most recent move
-        foreach (Tile tile in source.LevelSpawnerRef.AdjacentTiles(targets[targets.Count - 1]))
+        // LIGHT HIGHLIGHT
+        // Dijkstra search through every tile until there are no available tiles unsearched within range
+
+        // Clear the old lists
+        possibleSpaces.Clear();
+        openList.Clear();
+        closedList.Clear();
+        currentCheckedTile = null;
+
+        // Start the open list with the starting tile
+        openList.Add(new checkedTile(CurrentTile, null, currentMoveLength, targets.Count - 1));
+
+        // Loop until every possible tile has been checked
+        while (openList.Count > 0)
         {
-            if (IsMoveLegal(tile))
+            // The tile currently being looked at will be the tile this loop is looking at
+            currentCheckedTile = openList[0];
+            openList.Remove(currentCheckedTile);
+
+            // Loop through each of this tiles connections
+            foreach (Tile.TileConnection connection in currentCheckedTile.tile.Connections)
             {
-                possibleTargets.Add(tile);
+                bool valid = true; // Allow this to be proven false
+                bool alreadyFound = false;
+
+                // Make sure the move is legal
+                if (!IsMoveLegal(connection.tile, currentCheckedTile.tile)) // The move is not legal
+                {
+                    valid = false;
+                }
+
+                // Make sure no allies plan on being in this tile at this step
+                if (source.Owner.TeamManager.PlannedMovementAtStep(currentCheckedTile.step + 1, phase, source.Owner).Contains(connection.tile)) // An ally plans on being here at this step
+                {
+                    valid = false;
+                }
+
+                // Make sure this tile is not already in the open list
+                foreach (checkedTile tile in openList)
+                {
+                    if (tile.tile == connection.tile) // This tile is in the open list
+                    {
+                        // Check if this current path has a shorter length than the one we just found
+                        if (tile.length > currentCheckedTile.length + connection.length && valid) // We just found a shorter path and this path is still valid otherwise
+                        {
+                            // Update the currently stored path
+                            tile.length = currentCheckedTile.length + connection.length;
+                            tile.beforeTile = currentCheckedTile;
+                            tile.step = currentCheckedTile.step + 1;
+
+                            // Still mark it as not valid since we don't want to add a new path to the closed list
+                            valid = false;
+                        }
+
+                        alreadyFound = true;
+                    }
+                }
+
+                // Make sure this tile is not already in the closed list
+                foreach (checkedTile tile in closedList)
+                {
+                    if (tile.tile == connection.tile) // This tile is in the closed list
+                    {
+                        // Check if this current path has a shorter length than the one we just found
+                        if (tile.length > currentCheckedTile.length + connection.length && valid) // We just found a shorter path and this path is still valid otherwise
+                        {
+                            // Update the currently stored path
+                            tile.length = currentCheckedTile.length + connection.length;
+                            tile.beforeTile = currentCheckedTile;
+                            tile.step = currentCheckedTile.step + 1;
+
+                            // Still mark it as not valid since we don't want to add a new path to the closed list
+                            valid = false;
+                        }
+
+                        alreadyFound = true;
+                    }
+                }
+
+                // If the tile is valid, add it to the open list
+                if (valid && !alreadyFound) // This tile is valid and is not already in the open or closed list
+                {
+                    // Add this to the open list (and create a checkedTile wrapper)
+                    openList.Add(new checkedTile(connection.tile, currentCheckedTile, currentCheckedTile.length + connection.length, currentCheckedTile.step + 1));
+                }
             }
+
+            // This tile has been fully checked so move it to the closed list
+            closedList.Add(currentCheckedTile);
         }
 
-        // No heavy highlight
+        // Add to possible spaces and targets
+        possibleTargets.Clear();
+        possibleSpaces.Clear();
+        // Loop through the closed list and add everything that is within 1 step
+        foreach (checkedTile tile in closedList)
+        {
+            // If its within range, add it to possible spaces
+            if (IsMoveWithinSpeed(tile) && tile.step != targets.Count - 1) // This tile is within range and is not the starting tile
+            {
+                // LIGHT HIGHLIGHT
+                possibleSpaces.Add(tile.tile);
+
+                // MEDIUM HIGHLIGHT
+                // Also check if its within 1 step
+                if (tile.step == targets.Count) // Its within 1 step
+                {
+                    possibleTargets.Add(tile.tile);
+                }
+            }
+        }
     }
 
     // Called in UpdatePossibleTargets only if the targets list is empty (would only happen if this was the first time it was called)
@@ -161,6 +385,8 @@ public class Move : Action
         // Add the tile the player is standing on as the first tile in targets, always
         targets.Add(source.Owner.Space);
 
+        currentMoveLength = 0;
+
         // Calculate new targets
         UpdatePossibleTargets();
     }
@@ -169,9 +395,10 @@ public class Move : Action
     {
         base.EndTurn();
         currentTileIndex = 1;
+        moveFinished = false;
     }
 
-    protected override string FormatDescription(bool playerExists)
+    public override string FormatDescription(bool playerExists)
     {
         string text = "";
 

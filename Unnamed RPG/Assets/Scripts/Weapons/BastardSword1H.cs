@@ -15,7 +15,7 @@ public class BastardSword1H : Weapon
             // List out every action
             new Attack(
                 "Slash", // Display name
-                1, 0, 1, 0, // Costs
+                0, 1, 1, 0, // Costs
                 +4, new List<Game.stats> {Game.stats.strength, Game.stats.dexterity}, // Hit bonus
                 +0, new List<Game.stats> {}, // Crit bonus
                 2, // Damage
@@ -24,10 +24,10 @@ public class BastardSword1H : Weapon
             ),
             new Attack(
                 "Stab", // Display name
-                2, 0, 1, 0, // Costs
+                0, 2, 1, 0, // Costs
                 +0, new List<Game.stats> {Game.stats.strength, Game.stats.dexterity}, // Hit bonus
                 +3, new List<Game.stats> {Game.stats.dexterity}, // Crit bonus
-                2, // Damage
+                3, // Damage
                 1, // Range
                 new List<Action.attackEffects> {} // Extra effects
             ),

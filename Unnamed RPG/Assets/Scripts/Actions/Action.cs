@@ -25,6 +25,8 @@ public class Action
     protected List<Tile> targets = new List<Tile> { };
     protected List<Tile> possibleSpaces = new List<Tile> { }; // Every possible space within range of this action (light highlight)
     protected List<Tile> possibleTargets = new List<Tile> { }; // Every possible space that could be targeted with this action
+    protected bool canSelectSpaces = false; // Hovering over a possible space instead of a possible target should still heavy highlight it (mainly used for moves)
+    protected bool needsTarget = true; // False for things like Recover, which don't target anything
     public enum attackType { attack, move, buff, summon}; // TODO: This will probably become relevant at some point
                                                           // UI stuff
     uiActionButton uiButton; // Empty object thats turned on and off to turn the buttons for the action source buttons on and off (off when an action is selected)
@@ -87,6 +89,55 @@ public class Action
     {
         get { return (targets.Count != 0); }
     }
+    public bool CanSelectSpaces
+    {
+        get { return canSelectSpaces; }
+    }
+    public bool Playable
+    {
+        get {
+            // All of the following conditions have to be true for this to be playable
+            bool playable = true; // Allow this to be proven false
+
+            // Test if there is a cooldown
+            if (cooldown > 0)
+            {
+                playable = false;
+            }
+            
+            // Test if there is a recharge on the source
+            else if (source.Recharge > 0)
+            {
+                playable = false;
+            }
+
+            // Test if the owner has enough energy
+            else if (source.Owner.Energy < energyCost)
+            {
+                playable = false;
+            }
+
+            // Test if the owner has another action submitted and neither this nor that is a minor action
+            else if (source.Owner.SubmittedActions.Count == 1) // there is another action submitted
+            {
+                if (!source.Owner.SubmittedActions[0].isMinorAction && !isMinorAction) // Neither that nor this action are minor actions
+                {
+                    playable = false;
+                }
+            }
+
+            else if (source.Owner.SubmittedActions.Count == 2) // The owner has already submitted 2 actions
+            {
+                playable = false;
+            }
+
+            return playable;
+        }
+    }
+    public bool NeedsTarget
+    {
+        get { return needsTarget; }
+    }
 
 
     // -=-=-=-= ATTACK SPECIFIC VARIABLES (AND PROPERTIES) =-=-=-=-
@@ -112,7 +163,7 @@ public class Action
         throwWeapon, // Throws the weapon and leaves the owner's inventory. Used by daggers and hatchets and spears
         targetThreeCreatures, // target up to 3 creatures within range. Used by the cleave attack for heavy weapons
         knockBack, // Can knock enemies back 1 tile from you if they fail a strength check. Used by blunt weapons
-        // TODO: Maybe something with AOE
+        requiresAmmo, // Used for ranged weapon attacks that need to be loaded first. Also it consumes 1 ammo
         // TODO: Maybe extra energy spent when the enemy contests it (like in blocks)
     }
     protected List<attackEffects> extraEffects;
@@ -241,6 +292,30 @@ public class Action
         get { return aoeTilesWithCreature; }
     }
 
+    // -=-=-=-= MOVE SPECIFIC VARIABLES (AND PROPERTIES) =-=-=-=-
+    //protected bool moveInterrupted = false; // Set to true if the movement is interrupted and they should not move anymore this turn
+    protected bool moveFinished = false; // Set to true when this has moved its final step this turn
+    protected Creature moveContestion; // Which creature this move would bump into this step. Assigned by game.cs
+    protected int currentTileIndex = 1; // Used when performing the move animations. Always starts on 1 because index 0 is the starting tile (and we don't move to that)
+/*    public bool MoveInterrupted
+    {
+        get { return moveInterrupted; }
+        set { moveInterrupted = value; }
+    }*/
+    public Creature MoveContestion
+    {
+        get { return moveContestion; }
+        set { moveContestion = value; }
+    }
+    public int CurrentTileIndex
+    {
+        get { return currentTileIndex; }
+    }
+    public bool MoveFinished
+    {
+        get { return moveFinished; }
+    }
+
     // Default Constructor (should only be used by child classes)
     public Action(string displayName, int rechargeCost, int cooldownCost, int energyCost, int castTimeCost, bool isMinorAction, Game.phase phase)
     {
@@ -268,6 +343,11 @@ public class Action
 
         // Cost the owner energy
         source.Owner.Energy -= energyCost;
+    }
+
+    public virtual void PlayAnimation()
+    {
+        // Do nothing by default
     }
 
     public virtual void EndTurn()
@@ -352,20 +432,22 @@ public class Action
         rolledAttack = Random.Range(1, 21);
     }
 
-    public virtual string FormatDisplayText(bool playerExists)
+    public virtual string FormatCostText()
     {
         // Add the header
-        string text = displayName;
-        text += "\n" + phase + " phase";
-
-        // Add the description
-        text += "\n" + FormatDescription(playerExists);
+        string text = "";
 
         // Add the costs if there are them
-        if (energyCost > 0) // there is an energy cost
+        if (castTimeCost > 0) // There is a cast time
+        {
+            text += "\n" + castTimeCost + " turn cast time";
+        }
+        // Always list the energy cost
+        text += "\nCosts " + energyCost + " energy";
+/*        if (energyCost > 0) // there is an energy cost
         {
             text += "\nCosts " + energyCost + " energy";
-        }
+        }*/
         if (cooldownCost > 0) // There is a cooldown cost
         {
             text += "\n" + cooldownCost + " turn cooldown";
@@ -384,14 +466,93 @@ public class Action
 
     // Called at the end of constructors (not the base constructor though)
     // playerExists = false when in character creation and it should show what stats go into the attack bonuses and stuff
-    protected virtual string FormatDescription(bool playerExists)
+    public virtual string FormatDescription(bool playerExists)
     {
         return "";
+    }
+
+    public virtual string FormatInnactiveText()
+    {
+        string text = "";
+        bool newLine = false; // false if this is the first line printed
+
+        // Cooldown
+        if (cooldown > 0) // They have a cooldown
+        {
+            text += "On cooldown for ";
+            if (cooldown == 1) // 1 turn (use singular "turn")
+            {
+                text += "1 turn";
+            }
+            else // More than 1 turn (use plural "turns")
+            {
+                text += cooldown + " turns";
+            }
+
+            // Mark that a line has been printed
+            newLine = true;
+        }
+
+        // Recharge
+        if (source.Recharge > 0) // They have a recharge
+        {
+            if (newLine) // This is not the first line printed
+            {
+                text += "\n";
+            }
+
+            text += "Weapon recharging for ";
+            if (source.Recharge == 1) // 1 turn recharge (use the singular "turn")
+            {
+                text += "1 turn";
+            }
+            else // More than 1 turn (use plural "turns")
+            {
+                text += source.Recharge + " turns";
+            }
+
+            // Mark that a line has been printed
+            newLine = true;
+        }
+
+        // Insufficient Energy
+        if (source.Owner.Energy < energyCost) // Owner is missing energy
+        {
+            if (newLine) // This is not the first line printed
+            {
+                text += "\n";
+            }
+
+            text += "Insufficient energy";
+        }
+
+        return text;
     }
 
     // Change the button if the action is on cooldown
     public virtual void UpdateUI()
     {
         uiButton.UpdateUI();
+    }
+
+    // Just here for Move.cs
+    public virtual void CheckCollision(List<Creature> allCreatures)
+    {
+
+    }
+    // Also here for move.cs
+    public virtual Tile StepAtIndex(int index)
+    {
+        // Test if the index is within range
+        if (index <= targets.Count - 1) // The index is within range
+        {
+            // Return the chosen index
+            return targets[index];
+        }
+        else // The index is out of range
+        {
+            // Return the last index
+            return targets[targets.Count - 1];
+        }
     }
 }

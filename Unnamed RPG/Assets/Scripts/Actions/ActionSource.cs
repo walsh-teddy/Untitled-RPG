@@ -14,7 +14,6 @@ public class ActionSource
     // Game manager stuff (mainly so the actions can access it)
     protected LevelSpawner levelSpawner;
     protected Game game;
-    protected PlayerManager playerManager;
     protected UIManager uiManager;
     protected GameObject uiRoot;
     protected GameObject uiButton;
@@ -35,7 +34,7 @@ public class ActionSource
     public List<Action> ActionList
     {
         get { return actionList; }
-    }
+    } // TODO: Make this a dictionary
     public Creature Owner
     {
         get { return owner; }
@@ -47,10 +46,6 @@ public class ActionSource
     public Game GameRef
     {
         get { return game; }
-    }
-    public PlayerManager PlayerManagerRef
-    {
-        get { return playerManager; }
     }
     public UIManager UIManagerRef
     {
@@ -81,7 +76,6 @@ public class ActionSource
         GameObject gameManager = GameObject.FindGameObjectWithTag("GameManager");
         levelSpawner = gameManager.GetComponent<LevelSpawner>();
         game = gameManager.GetComponent<Game>();
-        playerManager = gameManager.GetComponent<PlayerManager>();
         uiManager = gameManager.GetComponent<UIManager>();
 
         // Point to actions

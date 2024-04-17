@@ -42,4 +42,9 @@ public class Obstacle : MonoBehaviour
         this.space = space;
         this.height = height;
     }
+
+    public override string ToString()
+    {
+        return ("Obstacle," + displayName);
+    }
 }

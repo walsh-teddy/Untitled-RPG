@@ -17,7 +17,6 @@ public class UIManager : MonoBehaviour
     [SerializeField] GameObject submitButton;
     [SerializeField] GameObject undoButton;
     [SerializeField] GameObject buttonOriginLocation;
-    [SerializeField] GameObject testTextPrefab;
     [SerializeField] GameObject uiRootPrefab;
     [SerializeField] GameObject actionSourceButtonPrefab;
     [SerializeField] GameObject actionButtonPrefab;
@@ -48,6 +47,8 @@ public class UIManager : MonoBehaviour
     List<GameObject> targetHighlights = new List<GameObject> { };
     [SerializeField] float tilePointOffset = 1.0f; // How far above a tile the tile point hovers
     [SerializeField] int widgetCount = 5;
+    [SerializeField] GameObject plannedMovementMarkerPrefab;
+    List<GameObject> plannedMovementMarkerList = new List<GameObject> { };
 
     // Other scripts
     LevelSpawner levelSpawner;
@@ -68,7 +69,6 @@ public class UIManager : MonoBehaviour
     private void Awake()
     {
         levelSpawner = gameObject.GetComponent<LevelSpawner>();
-        playerManager = gameObject.GetComponent<PlayerManager>();
         game = gameObject.GetComponent<Game>();
     }
 
@@ -85,6 +85,9 @@ public class UIManager : MonoBehaviour
 
             // Create a new selected target highlight
             targetHighlights.Add(Instantiate(targetHighlightPrefab));
+
+            // Create a new planned movement marker
+            plannedMovementMarkerList.Add(Instantiate(plannedMovementMarkerPrefab));
         }
     }
 
@@ -92,6 +95,10 @@ public class UIManager : MonoBehaviour
     public void CreateUI()
     {
         Debug.Log("Creating UI");
+
+        // Cache the player manager
+        playerManager = game.PlayerManager;
+
         // Loop through each player
         foreach (Player player in playerManager.Players)
         {
@@ -190,7 +197,7 @@ public class UIManager : MonoBehaviour
                 undoButton.SetActive(false);
 
                 // Highlight the selected creature but no target
-                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.realPosition;
+                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.RealPosition;
                 selectedCreatureHighlight.SetActive(true);
 
                 // No tiles should be highlighted
@@ -212,7 +219,7 @@ public class UIManager : MonoBehaviour
                 undoButton.SetActive(true);
 
                 // Highlight the selected creature
-                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.realPosition;
+                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.RealPosition;
                 selectedCreatureHighlight.SetActive(true);
 
                 // Highlight the creature targeted with an attack if there is one
@@ -247,7 +254,7 @@ public class UIManager : MonoBehaviour
                 undoButton.SetActive(false);
 
                 // Highlight the selected creature
-                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.realPosition;
+                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.RealPosition;
                 selectedCreatureHighlight.SetActive(true);
 
                 break;
@@ -257,11 +264,24 @@ public class UIManager : MonoBehaviour
 
                 // Update the display text
                 // TODO: Update the display text with stuff more specific to the action
-                displayText.text = string.Format("{0}\n{1} selected from {2}.\nSelect a target",
-                    playerManager.SelectedPlayer.DisplayName,
-                    playerManager.SelectedPlayer.SelectedAction.DisplayName,
-                    playerManager.SelectedPlayer.SelectedActionSource.DisplayName
-                );
+                if (false) { } //(playerManager.SelectedPlayer.SelectedAction.IsMove) // It is a move
+/*                {
+                    displayText.text = string.Format("{0}\n{1} selected from {2}\nSelect a target\n{3}/{4} movement taken",
+                        playerManager.SelectedPlayer.DisplayName,
+                        playerManager.SelectedPlayer.SelectedAction.DisplayName,
+                        playerManager.SelectedPlayer.SelectedActionSource.DisplayName,
+                        playerManager.SelectedPlayer.SelectedAction.CurrentMoveLength,
+                        playerManager.SelectedPlayer.SelectedAction.Speed
+                    );
+                }*/
+                else // Default
+                {
+                    displayText.text = string.Format("{0}\n{1} selected from {2}\nSelect a target",
+                        playerManager.SelectedPlayer.DisplayName,
+                        playerManager.SelectedPlayer.SelectedAction.DisplayName,
+                        playerManager.SelectedPlayer.SelectedActionSource.DisplayName
+                    );
+                }
 
                 // Turn the action pannel on (its probably already on but this is a failsafe
                 actionPannel.SetActive(true);
@@ -275,7 +295,7 @@ public class UIManager : MonoBehaviour
                 undoButton.SetActive(false);
 
                 // Highlight the selected creature and no target (might be redundant but safe)
-                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.realPosition;
+                selectedCreatureHighlight.transform.position = playerManager.SelectedPlayer.Space.RealPosition;
                 selectedCreatureHighlight.SetActive(true);
 
                 // Update the player move line widgets
@@ -356,6 +376,12 @@ public class UIManager : MonoBehaviour
                 movementBarFull.SetActive(true);
                 break;
         }
+
+        // Update all creature UI
+        foreach (Creature creature in game.Creatures)
+        {
+            creature.UpdateUI();
+        }
     }
 
     // Updates the line renderer to point to the different tiles the player is moving to
@@ -383,7 +409,7 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < tileList.Count; i++)
         {
             // Put a tile point over the tile
-            Vector3 targetPosition = tileList[i].realPosition;
+            Vector3 targetPosition = tileList[i].RealPosition;
             targetPosition.y += tilePointOffset;
             tilePointList[i].gameObject.transform.position = targetPosition;
 
@@ -403,6 +429,17 @@ public class UIManager : MonoBehaviour
             // Enable the line renderer
             lineRendererList[i - 1].enabled = true;
         }
+
+        // ALSO Update the planned movement markers
+        // Get the planned movement of all allies
+        List<Tile> plannedMovementThisPhase = playerManager.PlannedMovementAtStep(tileList.Count, playerManager.SelectedPlayer.SelectedAction.Phase, playerManager.SelectedPlayer);
+
+        // Loop through that list and put a marker down on each tile
+        for (int i = 0; i < plannedMovementThisPhase.Count; i++)
+        {
+            plannedMovementMarkerList[i].transform.position = plannedMovementThisPhase[i].RealPosition;
+            plannedMovementMarkerList[i].SetActive(true);
+        }
     }
     public void HidePlayerMoveLines()
     {
@@ -418,6 +455,7 @@ public class UIManager : MonoBehaviour
         {
             tilePointList[i].enabled = false;
             lineRendererList[i].enabled = false;
+            plannedMovementMarkerList[i].SetActive(false);
         }
     }
 
@@ -440,7 +478,7 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < targets.Count; i ++)
         {
             // Put this highlight on this target
-            targetHighlights[i].transform.position = targets[i].realPosition;
+            targetHighlights[i].transform.position = targets[i].RealPosition;
             targetHighlights[i].SetActive(true);
         }
     }
@@ -459,5 +497,19 @@ public class UIManager : MonoBehaviour
         {
             targetHighlight.SetActive(false);
         }
+    }
+
+    // TODO: Move the logic from the player manager to here
+    public void SubmitActionButtonClicked()
+    {
+        playerManager.SubmitActionButtonClicked();
+    }
+    public void BackButtonClicked()
+    {
+        playerManager.BackButtonClicked();
+    }
+    public void UndoButtonClicked()
+    {
+        playerManager.UndoButtonClicked();
     }
 }

@@ -23,7 +23,7 @@ using UnityEngine;
         }
     )
     {
-        // Nothing special in the Hatchet constructor specifically
+        // Nothing special in this constructor specifically
     }
 */
 public abstract class Weapon : ActionSource

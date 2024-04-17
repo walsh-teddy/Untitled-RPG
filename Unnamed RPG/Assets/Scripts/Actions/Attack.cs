@@ -48,6 +48,8 @@ public class Attack : Action
         this.extraEffects = extraEffects;
         aoeType = aoeTypes.none;
         isAttack = true;
+
+        shouldDisplayCritBonus = !(critBonusBase == 0 && critBonusScale.Count == 0);
     }
 
     // Much of the attack resolution stuff is done by game.cs
@@ -117,7 +119,7 @@ public class Attack : Action
         }
     }
 
-    protected override string FormatDescription(bool playerExists)
+    public override string FormatDescription(bool playerExists)
     {
         string text = "";
 

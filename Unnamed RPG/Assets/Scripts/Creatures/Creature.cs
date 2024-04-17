@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
+using TMPro;
 
 public class Creature : MonoBehaviour
 {
@@ -11,9 +13,10 @@ public class Creature : MonoBehaviour
     protected Tile space;
     protected bool controllable = false; // True if its a player character (changed to true in Start() )
     protected Game game;
+    protected TeamManager teamManager; // TODO: Actually connect this to stuff and make player.playerManager refer to this as well
 
     // Animation variables
-    [SerializeField] Animator animationController;
+    protected Animator animationController;
     private Tile targetTile;
 
     [Header("Physical Traits")]
@@ -23,7 +26,6 @@ public class Creature : MonoBehaviour
     [SerializeField] protected float eyeHeight;
     [SerializeField] protected GameObject body;
 
-
     [Header("Stats")]
     // stats that only change outside of the game
     [SerializeField] protected int strength;
@@ -32,11 +34,18 @@ public class Creature : MonoBehaviour
     [SerializeField] protected int speed = 3;
     [SerializeField] protected int maxHealth;
     [SerializeField] protected int maxEnergy;
-    [SerializeField] protected int defence; // The minimum an attack needs to roll to hit someone
+    [SerializeField] protected int baseDefence; // The minimum an attack needs to roll to hit someone
     [SerializeField] string team; // Either "player" or "enemy" for now
+
+    [Header("UI Fields")]
+    [SerializeField] protected Canvas canvas;
+    [SerializeField] protected Slider healthBarSlider;
+    [SerializeField] protected TextMeshProUGUI healthBarText;
+    [SerializeField] protected Slider energyBarSlider;
+    [SerializeField] protected TextMeshProUGUI energyBarText;
     public int Defence
     {
-        get { return defence; }
+        get { return baseDefence + dexterity; }
     }
 
     // Action logic
@@ -46,16 +55,19 @@ public class Creature : MonoBehaviour
     {
         get { return submittedActions; }
     }
+    protected List<Tile>[] plannedMovement = { new List<Tile> { }, new List<Tile> { } }; // What tiles this creature plans on being in for each step. Index 0 is prep phase, index 1 is movement phase
 
     // temporary stats that change in the game
     protected int health;
     protected int damagedMaxEnergy;
     protected int energy;
-    protected int tilesMoved = 0;
 /*    protected List<Item> equippedItems;
-*/    protected bool predicted;
+*/    
+    protected bool predicted;
+    protected bool movingThisPhase = false; // Used for movement collision tests
 
     // Action Source stuff
+    // TODO: Make these dictionaries rather than lists
     protected List<ActionSource> activeActionSources = new List<ActionSource> { }; // List of active action sources (self and weapons in hand. Not stuff in inventory)
     public List<ActionSource> ActionSources
     {
@@ -71,6 +83,10 @@ public class Creature : MonoBehaviour
     {
         get { return health; }
         set { health = value; }
+    }
+    public int MaxHealth
+    {
+        get { return maxHealth; }
     }
     public int Str
     {
@@ -88,6 +104,10 @@ public class Creature : MonoBehaviour
     {
         get { return energy; }
         set { energy = value; }
+    }
+    public int MaxEnergy
+    {
+        get { return maxEnergy; }
     }
     public int Speed
     {
@@ -113,11 +133,19 @@ public class Creature : MonoBehaviour
     {
         get { return controllable; }
     }
-
     public bool Predicted
     {
         get { return predicted; }
         set { predicted = value; }
+    }
+    public bool MovingThisPhase
+    {
+        get { return movingThisPhase; }
+        set { movingThisPhase = value; }
+    }
+    public bool IsAlive
+    {
+        get { return health > 0; }
     }
 
     public bool HasSubmittedAction
@@ -134,14 +162,31 @@ public class Creature : MonoBehaviour
         get { return space; }
         set { space = value; }
     }
+    public List<Tile>[] PlannedMovement
+    {
+        get { return plannedMovement; }
+    }
+    public TeamManager TeamManager
+    {
+        get { return teamManager; }
+        set { teamManager = value; }
+    }
 
     // Methods
     private void Awake()
     {
-        // Get the value for the level spawner
+        // Get the value for the gameManager components
         gameManager = GameObject.FindGameObjectWithTag("GameManager");
         levelSpawner = gameManager.GetComponent<LevelSpawner>();
         game = gameManager.GetComponent<Game>();
+
+        // Cache the value of the animation controller
+        animationController = gameObject.GetComponent<Animator>();
+    }
+
+    private void Update()
+    {
+        canvas.transform.rotation = Camera.main.transform.rotation;
     }
 
     // Called by a move object in DoAction()
@@ -154,7 +199,6 @@ public class Creature : MonoBehaviour
             // TODO: Do some stuff with bumping into things
             // This would probably be done by Game.cs in the move phase
             // Just a failsafe for now so things don't exist on the same tile
-            return;
         }
 
         this.targetTile = targetTile;
@@ -170,7 +214,7 @@ public class Creature : MonoBehaviour
 
     public void DisplayMovePosition(float percentThere)
     {
-        gameObject.transform.position = space.realPosition + (targetTile.realPosition - space.realPosition) * percentThere;
+        gameObject.transform.position = space.RealPosition + (targetTile.RealPosition - space.RealPosition) * percentThere;
     }
 
     public void FinishMove()
@@ -207,31 +251,30 @@ public class Creature : MonoBehaviour
     // Convert the position to unity transform positiona
     protected void DisplayPosition()
     {
-        gameObject.transform.position = space.realPosition;
+        gameObject.transform.position = space.RealPosition;
     }
 
     public virtual void Create(Tile space)
     {
+        gameObject.name = ToString();
+
         // Attatch to the first tile
         this.space = space;
-        space.Occupant = this;
         DisplayPosition();
+        ResetPlannedMovement();
 
         // get all the different stats at correct starting ammounts
         health = maxHealth;
         damagedMaxEnergy = maxEnergy;
         energy = maxEnergy;
 
-        // Give them equipment
         activeActionSources.Add(new Self(this));
-        activeActionSources.Add(new BastardSword1H(this));
-        activeActionSources.Add(new Dagger(this));
-        activeActionSources.Add(new Roundshield(this));
-        activeActionSources.Add(new AOETestWeapon(this));
     }
 
     public void TakeDamage(int damage, bool canGuard)
     {
+        canGuard = false; // TODO: Delete this (not balancing guarding yet)
+
         // Guard if they can
         if (canGuard)
         {
@@ -244,6 +287,17 @@ public class Creature : MonoBehaviour
             // TODO: Do a concentration check
             health -= damage;
             Debug.Log(displayName + " took " + damage + " damage. Is now at " + health + " health");
+        }
+    }
+    public void HealDamage(int damage)
+    {
+        // Increase health
+        health += damage;
+
+        // Cap health at max
+        if (health > maxHealth)
+        {
+            health = maxHealth;
         }
     }
 
@@ -277,6 +331,7 @@ public class Creature : MonoBehaviour
             actionSource.EndTurn();
         }
 
+        ResetPlannedMovement();
         UnSubmitAction();
         UpdatePossibleTargets();
     }
@@ -340,6 +395,13 @@ public class Creature : MonoBehaviour
 
         // Add the submitted action to the list
         game.SubmitAction(action);
+
+        // Update planned movement if this was a move (checked in the function)
+        UpdatePlannedMovement();
+
+        // Tell all allies to update possible targets
+        // TODO: Possibly make this just for movement actions since thats what this is here for
+        teamManager.UpdatePossibleTargets();
     }
 
     public virtual void UpdatePossibleTargets()
@@ -351,7 +413,68 @@ public class Creature : MonoBehaviour
         }
     }
 
-    // THESE ACTIONS ARE JUST HERE SO THE PLAYER CLASS CAN OVERWRITE THEM
+    protected void UpdatePlannedMovement()
+    {
+        // Test if the submitted action is movement
+        // TODO: Make this work for multiple actions
+        if (submittedActions[0].IsMove)
+        {
+            // Test if its in the movement phase or prep phase
+            if (submittedActions[0].Phase == Game.phase.move) // Move phase
+            {
+                // TODO: Might be causing a memory leak (not destroying old list) (its probably fine)
+                plannedMovement[1] = submittedActions[0].Targets;
+            }
+            else // Prep phase
+            {
+                // TODO: Might be causing a memory leak (not destroying old list)
+                plannedMovement[0] = submittedActions[0].Targets;
+
+                // Update the planned movement of move phase to start the final spot of this prep phase
+                plannedMovement[1].Clear();
+                plannedMovement[1][0] = plannedMovement[0][plannedMovement[0].Count - 1];
+            }
+        }
+    }
+
+    protected void ResetPlannedMovement()
+    {
+        plannedMovement[0].Clear();
+        plannedMovement[0].Add(space);
+        plannedMovement[1].Clear();
+        plannedMovement[1].Add(space);
+    }
+
+    public void UpdateUI()
+    {
+        // HEALTH BAR
+        // Slider
+        healthBarSlider.value = (float)health / (float)maxHealth;
+        // Text
+        healthBarText.text = ("Health: " + health + "/" + maxHealth);
+
+        // ENERGY BAR
+        // Slider
+        energyBarSlider.value = (float)energy / (float)maxEnergy;
+        // Text
+        energyBarText.text = ("Energy: " + energy + "/" + maxEnergy);
+
+        // TODO: Special energy
+    }
+
+    public void Die()
+    {
+        // Remove this from the team manager
+        teamManager.TeamMembers.Remove(this);
+
+        // Remove this from the tile it is standing on
+        space.Occupant = null;
+
+        // Delete this object
+        GameObject.Destroy(gameObject);
+    }
+
+    // THESE METHODS ARE JUST HERE SO THE PLAYER CLASS CAN OVERWRITE THEM
     public virtual void UnSubmitAction()
     {
         // Make sure they've submitted an action
@@ -367,7 +490,13 @@ public class Creature : MonoBehaviour
         submittedActions.Clear();
         hasSubmittedAction = false;
 
-        // 
+        // Reset planned movement
+        ResetPlannedMovement();
+
+        // Tell all allies to update possible targets
+        // TODO: Possibly make this just for movement actions since thats what this is here for
+        teamManager.UpdatePossibleTargets();
+
         DiscardAction();
     }
     public virtual void DiscardAction()
@@ -385,5 +514,9 @@ public class Creature : MonoBehaviour
     public virtual void SelectAction(Action newAction)
     {
         // Do nothing by default (this is mostly for the player class)
+    }
+    public override string ToString()
+    {
+        return ("Creature," + displayName);
     }
 }

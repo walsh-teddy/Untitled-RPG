@@ -11,32 +11,32 @@ public class Roundshield : Weapon
     2,
     new List<Action>
     {
-            new AOEAttack(
-                "Roundshield Block", // Display name
-                0, 0, 1, 0, // Costs
-                +8, new List<Game.stats> {Game.stats.strength}, // Hit bonus
+/*            new AOEAttack(
+                "Block", // Display name
+                1, 0, 1, 0, // Costs
+                +8, new List<Game.stats> {Game.stats.strength, Game.stats.dexterity}, // Hit bonus
                 +0, new List<Game.stats> {}, // Crit bonus
                 0, // Damage
                 Action.aoeTypes.cone, 100, 0, 90, 0, // Range
                 new List<Action.attackEffects> { Action.attackEffects.canBlockAOE } // Extra effects
+            ),*/
+            new Attack( // TODO: This is temp while AOE stuff doesn't work
+                "Block", // Display name
+                1, 0, 1, 0, // Costs
+                +8, new List<Game.stats> {Game.stats.strength, Game.stats.dexterity}, // Hit bonus
+                +0, new List<Game.stats> {}, // Crit bonus
+                0, // Damage
+                1, // Range
+                new List<Attack.attackEffects> {} // Extra effects
             ),
-            new AOEAttack(
-                "Towershield Block", // Display name
+            new Attack(
+                "Bash", // Display name
                 0, 1, 1, 0, // Costs
-                +10, new List<Game.stats> {Game.stats.strength}, // Hit bonus
+                +1, new List<Game.stats> {Game.stats.strength}, // Hit bonus
                 +0, new List<Game.stats> {}, // Crit bonus
-                0, // Damage
-                Action.aoeTypes.cone, 100, 0, 180, 0, // Range
-                new List<Action.attackEffects> { Action.attackEffects.canBlockAOE } // Extra effects
-            ),
-            new AOEAttack(
-                "Buckler Block", // Display name
-                0, 0, 1, 0, // Costs
-                +4, new List<Game.stats> {Game.stats.strength, Game.stats.dexterity}, // Hit bonus
-                +0, new List<Game.stats> {}, // Crit bonus
-                0, // Damage
-                Action.aoeTypes.line, 100, 1, 0, 0, // Range
-                new List<Action.attackEffects> { Action.attackEffects.canBlockAOE } // Extra effects
+                1, // Damage
+                1, // Range
+                new List<Attack.attackEffects> {} // Extra effects
             ),
     }
 )
