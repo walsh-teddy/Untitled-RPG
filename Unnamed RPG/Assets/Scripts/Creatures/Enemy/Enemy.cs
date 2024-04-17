@@ -29,7 +29,7 @@ public class Enemy : Creature
         agressiveActions.Add(activeActionSources[0].ActionList[0]); // Self recover
         agressiveActions.Add(activeActionSources[0].ActionList[3]); // Self punch
 
-        // Save their prefered defensive actions
+        // Save their prefered defensive actions (unused as of now)
         defensiveActions.Add(activeActionSources[0].ActionList[1]); // Self recover
         defensiveActions.Add(activeActionSources[1].ActionList[2]); // Bastard sword block
         defensiveActions.Add(activeActionSources[1].ActionList[1]); // Bastard Sword block
@@ -89,13 +89,6 @@ public class Enemy : Creature
         }
 
         // TODO: Also add a minor action possibly (that would require not doing return when an action is submitted
-    }
-
-    public virtual Action Pathfind(Tile targetTile)
-    {
-        // TODO: Actually make this lol
-        // Probably use Daikstra
-        return activeActionSources[0].ActionList[0];
     }
 
     protected virtual Tile PreferedTarget(Action action)
