@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61be7d4633238a8409904f14af60c48c, type: 3}
+  m_Name: Cheater Shot
+  m_EditorClassIdentifier: 
+  displayName: Cheater Shot
+  animationTrigger: shoot
+  castAnimationTrigger: 
+  phase: 3
+  isMinorAction: 0
+  cooldownCost: 0
+  rechargeCost: 0
+  energyCost: 3
+  castTimeCost: 0
+  hitBonusBase: 8
+  hitBonusScale: 01000000
+  critBonusBase: 4
+  critBonusScale: 01000000
+  damage: 3
+  range: 10
+  closeRange: 1
+  ignoreLineOfSight: 1
+  projectilePrefab: {fileID: 7362788692324581475, guid: 9c477def5e9f49c4a9d5c759299fae07, type: 3}
+  extraEffects: 05000000

@@ -8,29 +8,26 @@ public class Tile : MonoBehaviour
     protected Vector2 position;
     protected float height;
 
+    [SerializeField] string displayName;
+
+    [Header("Color")]
+    [SerializeField] Gradient heightGradiant;
+    [SerializeField] float maxHeight;
+    [SerializeField] float outlineBrightnessPercent; // Between 0.0 and 1.0
+    [SerializeField] MeshRenderer body;
+    [SerializeField] MeshRenderer outline;
+
     // Game Objects
+    [Header("Highlight Planes")]
     [SerializeField] MeshRenderer lightHighlightPlane;
     [SerializeField] MeshRenderer mediumHighlightPlane;
     [SerializeField] MeshRenderer heavyHighlightPlane;
-    public enum highlightLevels { none, light, medium, heavy }
+
     Obstacle obstacle;
     Creature occupant;
     LevelSpawner levelSpawner;
 
-    public struct TileConnection
-    {
-        public Tile tile;
-        public float length;
-
-        public TileConnection (Tile tile, float length)
-        {
-            this.tile = tile;
-            this.length = length;
-        }
-    }
     List<TileConnection> connections = new List<TileConnection> { };
-
-    [SerializeField] string displayName;
 
     // Properties
     public int x
@@ -119,6 +116,15 @@ public class Tile : MonoBehaviour
         this.height = height;
         levelSpawner = GameObject.FindGameObjectWithTag("GameManager").GetComponent<LevelSpawner>();
         gameObject.name = ToString();
+
+        // Alter the color of the tile
+        Color tileColor = heightGradiant.Evaluate(height / maxHeight);
+        body.material.SetColor("_Color", tileColor);
+        // The outline should be darker
+        tileColor.r *= outlineBrightnessPercent;
+        tileColor.g *= outlineBrightnessPercent;
+        tileColor.b *= outlineBrightnessPercent;
+        outline.material.SetColor("_Color", tileColor);
     }
     public void Create(int x, int y, float height, Obstacle obstacle)
     {
@@ -193,5 +199,17 @@ public class Tile : MonoBehaviour
     public override string ToString()
     {
         return ("Tile," + displayName + "(" + x + "/" + y + ")");
+    }
+}
+
+public struct TileConnection
+{
+    public Tile tile;
+    public float length;
+
+    public TileConnection(Tile tile, float length)
+    {
+        this.tile = tile;
+        this.length = length;
     }
 }

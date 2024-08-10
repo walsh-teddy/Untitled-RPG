@@ -59,8 +59,7 @@ public class LevelSpawner : MonoBehaviour
     [SerializeField] private GameObject playerPrefab4;
     [SerializeField] private GameObject enemyPreafab;
     [SerializeField] private GameObject randomEnemyPrefab;
-    [SerializeField] private GameObject grassTilePreafab;
-    [SerializeField] private GameObject rockTilePreafab;
+    [SerializeField] private GameObject tilePrefab;
     [SerializeField] private GameObject rockPreafab;
 
     Creature currentCreature; // Cached here and used when spawing creatures into the level
@@ -177,8 +176,8 @@ public class LevelSpawner : MonoBehaviour
             for (int y = 0; y < tileHeight; y++)
             {
                 // Create the tile at the propper height (don't create() until we also make the detail)
-                int currentTileHeight = int.Parse(tileMapInFile[x, y]);
-                map[x, y] = Instantiate(grassTilePreafab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.identity).GetComponent<Tile>();
+                float currentTileHeight = float.Parse(tileMapInFile[x, y]);
+                map[x, y] = Instantiate(tilePrefab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.identity).GetComponent<Tile>();
 
                 // Determine which direction to randomly rotate this spawned object if there is one
                 float randomRotation;
@@ -189,14 +188,6 @@ public class LevelSpawner : MonoBehaviour
                 {
                     case "_": // Blank
                         map[x, y].Create(x, y, currentTileHeight);
-
-                        // TODO: Delete this
-/*                        randomRotation = Random.Range(0, 100);
-                        if (randomRotation < 20)
-                        {
-                            Obstacle randomRock = Instantiate(rockPreafab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Obstacle>();
-                            map[x, y].Create(x, y, currentTileHeight, randomRock);
-                        }*/
                         break;
 
                     case "1": // Player 1 spawn TODO: Make player kits be based on their spawn type
@@ -248,7 +239,7 @@ public class LevelSpawner : MonoBehaviour
                         break;
 
                     default: // Something went wrong
-                        Debug.Log(string.Format("Error at ({0},{1})", x, y));
+                        Debug.LogError(string.Format("Error at ({0},{1})", x, y));
                         break;
                 }
             }
@@ -277,7 +268,7 @@ public class LevelSpawner : MonoBehaviour
         }
 
         // The level is now fully spawned
-        game.LevelComplete();
+        //game.LevelComplete();
     }
 
     public Tile TargetTile(Vector3 pointerPosition)
@@ -452,28 +443,6 @@ public class LevelSpawner : MonoBehaviour
         }
 
         return validTiles;
-
-        // Load this in once rather than repeatedly
-        Vector2 centerTilePos = centerTile.TilePosition;
-
-        // Loop through every tile and add it to the list if its within range
-        for (int x = 0; x < tileWidth; x++)
-        {
-            for (int y = 0; y < tileHeight; y++)
-            {
-                if (x >= centerTilePos.x - 1 &&
-                    x <= centerTilePos.x + 1 &&
-                    y >= centerTilePos.y - 1 &&
-                    y <= centerTilePos.y + 1 && // Its in range
-                    TilePointOnMap(centerTilePos) && // Its in bounds of the map
-                    !(x == centerTilePos.x && y == centerTilePos.y)) // Its not the center tile
-                {
-                    validTiles.Add(map[x, y]);
-                }
-
-                Debug.Log("(" + x + "/" + y + ")" + (x >= centerTilePos.x - 1) + (x <= centerTilePos.x + 1) + (y >= centerTilePos.y - 1) + (y <= centerTilePos.y + 1) + (TilePointOnMap(centerTilePos)));
-            }
-        }
     }
 
     public bool IsTileAdjacent(Tile startTile, Tile targetTile)
@@ -820,7 +789,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in lightTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.light;
+            tile.Highligted = highlightLevels.light;
 
             // Mark that this is a curently highlighted tile
             lightHighlightedTiles.Add(tile);
@@ -831,7 +800,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in mediumTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.medium;
+            tile.Highligted = highlightLevels.medium;
 
             // Mark that this is a curently highlighted tile
             mediumHighlightedTiles.Add(tile);
@@ -841,7 +810,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in heavyTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.heavy;
+            tile.Highligted = highlightLevels.heavy;
 
             // Mark that this is a curently highlighted tile
             heavyHighlightedTiles.Add(tile);
@@ -860,7 +829,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in lightTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.light;
+            tile.Highligted = highlightLevels.light;
 
             // Mark that this is a curently highlighted tile
             lightHighlightedTiles.Add(tile);
@@ -871,7 +840,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in mediumTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.medium;
+            tile.Highligted = highlightLevels.medium;
 
             // Mark that this is a curently highlighted tile
             mediumHighlightedTiles.Add(tile);
@@ -886,7 +855,7 @@ public class LevelSpawner : MonoBehaviour
         foreach (Tile tile in heavyTiles)
         {
             // Highlight the tile
-            tile.Highligted = Tile.highlightLevels.heavy;
+            tile.Highligted = highlightLevels.heavy;
 
             // Mark that this is a curently highlighted tile
             heavyHighlightedTiles.Add(tile);
@@ -897,7 +866,7 @@ public class LevelSpawner : MonoBehaviour
         // Unhighlight each light tile
         foreach (Tile tile in lightHighlightedTiles)
         {
-            tile.Highligted = Tile.highlightLevels.none;
+            tile.Highligted = highlightLevels.none;
         }
 
         // Clear the list
@@ -910,11 +879,11 @@ public class LevelSpawner : MonoBehaviour
         {
             if (lightHighlightedTiles.Contains(tile))
             {
-                tile.Highligted = Tile.highlightLevels.light;
+                tile.Highligted = highlightLevels.light;
             }
             else
             {
-                tile.Highligted = Tile.highlightLevels.none;
+                tile.Highligted = highlightLevels.none;
             }
         }
 
@@ -928,22 +897,21 @@ public class LevelSpawner : MonoBehaviour
         {
             if (mediumHighlightedTiles.Contains(tile))
             {
-                tile.Highligted = Tile.highlightLevels.medium;
+                tile.Highligted = highlightLevels.medium;
             }
             else if (lightHighlightedTiles.Contains(tile))
             {
-                tile.Highligted = Tile.highlightLevels.light;
+                tile.Highligted = highlightLevels.light;
             }
             else
             {
-                tile.Highligted = Tile.highlightLevels.none;
+                tile.Highligted = highlightLevels.none;
             }
         }
 
         // Clear the list
         heavyHighlightedTiles.Clear();
     }
-
     public void UnHighlightAllTiles()
     {
         // Unhighlight all tiles

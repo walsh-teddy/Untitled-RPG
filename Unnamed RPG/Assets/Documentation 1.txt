@@ -4,3 +4,4 @@ Distance from a point to a line: https://www.youtube.com/watch?v=KHuI9bXZS74
 Side of a line: https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
 Reading from a file: https://forum.unity.com/threads/read-text-file-line-by-line-in-c.2279/
 Parsing int from char: https://stackoverflow.com/questions/239103/convert-char-to-int-in-c-sharp
+Particle Systems: https://www.youtube.com/watch?v=mJ3k_DLxRU0

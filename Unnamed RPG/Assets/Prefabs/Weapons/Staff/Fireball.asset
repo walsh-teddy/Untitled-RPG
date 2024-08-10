@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 550a80a7aa0a4f14bb9f519032b8805f, type: 3}
+  m_Name: Fireball
+  m_EditorClassIdentifier: 
+  displayName: Fireball
+  animationTrigger: NoAnimationYetSadFace
+  isMinorAction: 0
+  phase: 3
+  actionType: 3
+  cooldownCost: 2
+  rechargeCost: 1
+  energyCost: 2
+  castTimeCost: 1
+  hitBonusBase: 7
+  hitBonusScale: 02000000
+  critBonusBase: 0
+  critBonusScale: 
+  damage: 3
+  range: 7
+  closeRange: -1
+  projectilePrefab: {fileID: 0}
+  extraEffects: 
+  aoeType: 1
+  aoeReach: 3
+  aoeAngle: 0
+  aoeHeight: 1

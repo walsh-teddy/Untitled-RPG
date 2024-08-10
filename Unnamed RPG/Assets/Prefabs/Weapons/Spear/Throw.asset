@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61be7d4633238a8409904f14af60c48c, type: 3}
+  m_Name: Throw
+  m_EditorClassIdentifier: 
+  displayName: Throw
+  animationTrigger: Throw
+  castAnimationTrigger: 
+  buttonImage: {fileID: 0}
+  phase: 3
+  isMinorAction: 0
+  cooldownCost: 0
+  rechargeCost: 0
+  energyCost: 2
+  castTimeCost: 0
+  hitBonusBase: 4
+  hitBonusScale: 0000000001000000
+  critBonusBase: -1
+  critBonusScale: 01000000
+  damage: 2
+  range: 6
+  closeRange: 2
+  ignoreLineOfSight: 0
+  projectilePrefab: {fileID: 7362788692324581475, guid: 8fa4343c9cfa7aa4885541e7594bacef, type: 3}
+  extraEffects: 02000000

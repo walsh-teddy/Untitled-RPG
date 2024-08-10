@@ -72,6 +72,10 @@ MonoBehaviour:
   stepHeight: 1
   eyeHeight: 0.9
   body: {fileID: 8246786143588081751}
+  rightHand: {fileID: 0}
+  leftHand: {fileID: 0}
+  prefabInventory:
+  - {fileID: 1702456656628872110, guid: a13435e52a3f5d54b8cbee4766e45d0c, type: 3}
   strength: 1
   dexterity: 1
   intellect: 0
@@ -85,6 +89,9 @@ MonoBehaviour:
   healthBarText: {fileID: 2399518209260918658}
   energyBarSlider: {fileID: 1635193949958563590}
   energyBarText: {fileID: 7172126703329192618}
+  floatingText: {fileID: 1908109792492554409}
+  percentageBetweenTiles: 0
+  playingMoveAnimation: 0
   agressiveHealthThreshhold: 0
   preferedAgressiveDistance: 0
   preferedDefensiveDistance: 0
@@ -394,6 +401,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1908109792492554409 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5334713664815421172, guid: 1041149cbd667694a89147d43b86c608, type: 3}
+  m_PrefabInstance: {fileID: 5796768716704734813}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2bf1583c05abe4459a4c5dfc3e1076d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &2399518209260918658 stripped

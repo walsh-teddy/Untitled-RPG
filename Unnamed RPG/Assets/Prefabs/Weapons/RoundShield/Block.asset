@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 550a80a7aa0a4f14bb9f519032b8805f, type: 3}
+  m_Name: Block
+  m_EditorClassIdentifier: 
+  displayName: Block
+  animationTrigger: Block
+  phase: 3
+  isMinorAction: 0
+  cooldownCost: 0
+  rechargeCost: 1
+  energyCost: 1
+  castTimeCost: 0
+  hitBonusBase: 8
+  hitBonusScale: 00000000
+  critBonusBase: 0
+  critBonusScale: 
+  damage: 0
+  range: 100
+  closeRange: -1
+  ignoreLineOfSight: 1
+  projectilePrefab: {fileID: 0}
+  extraEffects: 
+  aoeType: 2
+  aoeReach: 100
+  aoeAngle: 90
+  aoeHeight: 0
+  circleCenterIgnoreLineOfSight: 0

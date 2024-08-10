@@ -29,14 +29,7 @@ public class PlayerManager : TeamManager
             selectedPlayer = value;
 
             // Update the game state
-            if (!selectedPlayer.HasSubmittedAction)
-            {
-                game.CurrentState = Game.gameState.playerSelected;
-            }
-            else
-            {
-                game.CurrentState = Game.gameState.playerSelectedSubmitted;
-            }
+            game.CurrentState = gameState.playerSelected;
 
             // Focus the new selected player
             cameraFocus.MoveTo(selectedPlayer);
@@ -73,7 +66,7 @@ public class PlayerManager : TeamManager
     {
         selectedPlayer.SubmitActionButton();
         levelSpawner.UnHighlightAllTiles();
-        game.CurrentState = Game.gameState.nothingSelected;
+        game.CurrentState = gameState.nothingSelected;
     }
 
     public void BackButtonClicked()
@@ -82,36 +75,36 @@ public class PlayerManager : TeamManager
         switch (game.CurrentState)
         {
             // Unselect the player
-            case Game.gameState.playerSelected:
-            case Game.gameState.playerSelectedSubmitted:
-                game.CurrentState = Game.gameState.nothingSelected;
+            case gameState.playerSelected:
+                game.CurrentState = gameState.nothingSelected;
                 break;
 
             // Unselect that action source
-            case Game.gameState.playerActionSourceSelectAction:
+            case gameState.playerActionSourceSelectAction:
                 selectedPlayer.DiscardActionSource();
-                game.CurrentState = Game.gameState.playerSelected;
+                game.CurrentState = gameState.playerSelected;
                 break;
 
             // Unselect the action
-            case Game.gameState.playerActionSelectTarget:
+            case gameState.playerActionSelectTarget:
                 selectedPlayer.DiscardAction();
-                game.CurrentState = Game.gameState.playerActionSourceSelectAction;
+                game.CurrentState = gameState.playerActionSourceSelectAction;
                 break;
         }
     }
 
-    public void UndoButtonClicked()
-    {
-        selectedPlayer.HasSubmittedAction = false;
-        game.CurrentState = Game.gameState.playerSelected;
-
-        // TODO: Clear the submitted action from the player and Game.cs
-        selectedPlayer.DiscardAction();
-    }
-
     public void CyclePlayers(int changeInIndex)
     {
+        // Don't do anything if the game is uninteractable
+        if (game.CurrentState == gameState.uninteractable) // Its uninteractable
+        {
+            // Break out of the function
+            return;
+        }
+
+        // Make sure any character who was selected becomes visible again
+        cameraFocus.LeavePerspective();
+
         // Select the next player index
         int newIndex = players.IndexOf(selectedPlayer) + changeInIndex;
 
@@ -129,5 +122,14 @@ public class PlayerManager : TeamManager
 
         // Update the selected player (use the property to use the other clean up code)
         SelectedPlayer = players[newIndex];
+    }
+
+    public override void RemoveTeamMember(Creature teamMember)
+    {
+        base.RemoveTeamMember(teamMember);
+
+        players.Remove((Player)teamMember);
+
+        selectedPlayer = players[0];
     }
 }

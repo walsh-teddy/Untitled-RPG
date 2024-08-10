@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
 
 public class Game : MonoBehaviour
 {
     // ATTRIBUTES
-    public enum phase { predictedDescision, descision, prep, attack, move }
     static phase currentPhase;
-    public enum weaponType { medium, heavy, light, shield, ranged, magic, none }
-    public enum aoeType { circle, cone, line }
-    public enum stats { strength, dexterity, intellect }
-    public List<Weapon> thrownWeapons = new List<Weapon> { };
+
+    public List<ActionSource> thrownWeapons = new List<ActionSource> { };
     UIManager uiManager;
     LevelSpawner levelSpawner;
     PlayerManager playerManager; // Included in teamMangers
@@ -22,36 +20,37 @@ public class Game : MonoBehaviour
     List<Creature> deadCreatures = new List<Creature> { };
     List<Creature> creaturesToDecideAction = new List<Creature> { };
     static List<Action> actionStack = new List<Action> { };
+    [SerializeField] public const int CLASH_ATTACK_WINDOW = 1; // If 2 attacks roll within [this] of eachother, then they clash
+
+    // Lists of actions per phase
     List<Action> actionsThisPhase = new List<Action> { };
-    // Used in the attack phase to know which attacks are contested by what
-    List<AttackLine> attackLinesThisRound = new List<AttackLine> { };
-    List<Tile> possibleTargetsThisRound = new List<Tile> { };
-    [SerializeField] public const int CLASH_ATTACK_WINDOW = 1; // If 2 attacks roll within 1 of eachother, then they clash
+    List<CastAction> castsThisPhase = new List<CastAction> { };
+    List<Attack> attacksThisPhase = new List<Attack> { };
+    List<Move> movesThisPhase = new List<Move> { };
+    List<BuffAction> buffsThisPhase = new List<BuffAction> { };
 
     [Header("Animation")]
+    [SerializeField] float castAnimationTime = 1.5f; // Time (in seconds) that a cast action animation takes
+    [SerializeField] float attackAnimationTime = 2; // Time (in seconds) that an attack animation takes
+    [SerializeField] float buffAnimationTime = 1.5f; // Time (in seconds) that a buff animation takes
     [SerializeField] float moveAnimationTime = 1; // Time (in seconds) that a move animation takes
-    [SerializeField] float moveAnimationPauseTime = 0.25f; // Time (in seconds) that the game pauses between each move
-    [SerializeField] float attackAnimationTime = 2; // Time (in seconds) that a move animation takes
-    [SerializeField] float attackAnimationPause = 0.25f; // Time (in seconds) that a move animation takes
+    [SerializeField] float animationPauseTime = 1; // Time (in seconds) in between animations
+    [SerializeField] float moveAnimationPauseTime = 0.5f;
+
+    // ATTACK PHASE LOGIC
+    //private float attackTimer;
+    //private float attackPauseTimer;
+    //private bool attackTimerRunning = false;
+    //private bool attackPauseTimerRunning = false;
+    private int currentAttackLineIndex = 0;
+    List<AttackLine> attackLinesThisPhase = new List<AttackLine> { };
+    List<Tile> possibleTargetsThisRound = new List<Tile> { };
 
     // MOVE PHASE LOGIC
-    private float moveTimer;
-    private float movePauseTimer;
-    private bool moveTimerRunning = false;
-    private bool movePauseTimerRunning = false;
-    private int longestMove;
+    //private int longestMove;
     private int currentMoveStep = 1;
 
     // States
-    public enum gameState
-    {
-        uniteractable, // It is not in a decision phase and the player needs to wait for animatons to happen
-        nothingSelected, // Nothing selected
-        playerSelected, // Selected a player. Waiting for an action source to be selected
-        playerSelectedSubmitted, // Selected a player who has already submitted an action
-        playerActionSourceSelectAction, // Selected a player and an action source. Waiting to select an action
-        playerActionSelectTarget, // Selecting the next tile for a player to move to
-    }
     private gameState currentState = gameState.nothingSelected;
 
     // PROPERTY
@@ -67,27 +66,6 @@ public class Game : MonoBehaviour
             cameraFocus.LeavePerspective();
             pointer.AOETargetLocked = false;
 
-            // This should be irrelevant with the new UpdateUI()
-
-/*            // Do stuff when changing away from the old state
-            switch (currentState)
-            {
-                case gameState.playerSelectedSubmitted:
-                    // Clear the player move widgets if they were shown
-                    uiManager.HidePlayerMoveLines();
-                    cameraFocus.LeavePerspective();
-                    break;
-                case gameState.playerActionSourceSelectAction:
-
-                    break;
-                case gameState.playerActionSelectTarget:
-                    // Discard the move
-                    playerManager.SelectedPlayer.DiscardAction();
-                    uiManager.HidePlayerMoveLines();
-                    cameraFocus.LeavePerspective();
-                    break;
-            }*/
-
             // Update the new state
             currentState = value;
 
@@ -95,10 +73,6 @@ public class Game : MonoBehaviour
             switch (currentState)
             {
                 case gameState.playerSelected:
-                    // Unhighlight all tiles
-                    levelSpawner.UnHighlightAllTiles();
-                    break;
-                case gameState.playerSelectedSubmitted:
                     // Unhighlight all tiles
                     levelSpawner.UnHighlightAllTiles();
                     break;
@@ -115,7 +89,7 @@ public class Game : MonoBehaviour
                     break;
             }
 
-            // Update the UI
+            // Update the UI in every case
             uiManager.UpdateUI();
         }
     }
@@ -127,7 +101,7 @@ public class Game : MonoBehaviour
     {
         get { return creatures; }
     }
-    public List<Weapon> ThrownWeapons
+    public List<ActionSource> ThrownWeapons
     {
         get { return thrownWeapons; }
     }
@@ -148,7 +122,7 @@ public class Game : MonoBehaviour
         levelSpawner = gameObject.GetComponent<LevelSpawner>();
         pointer = gameObject.GetComponent<Pointer>();
 
-        currentPhase = phase.predictedDescision;
+        currentPhase = phase.PredictedDecision;
 
         // Put the player manager in the dictionary of team managers
         playerManager = new PlayerManager();
@@ -158,42 +132,18 @@ public class Game : MonoBehaviour
     {
         // Now that all the variables are set up (in Awake), push commands to other components
         levelSpawner.SpawnLevel();
-        uiManager.UpdateUI();
-    }
-    private void Update()
-    {
-        // Move timer logic
-        if (moveTimerRunning)
+
+        // Get initial targets for each action
+        foreach (Creature creature in creatures)
         {
-            // Update the timer
-            moveTimer += Time.deltaTime;
-
-            // Update the player positions
-            UpdateMove();
-
-            // Check if its reached its goal
-            if (moveTimer >= moveAnimationTime) // Its reached the end of the curent animation
-            {
-                moveTimerRunning = false;
-                moveTimer = 0;
-                FinishMove();
-            }
-        } 
-
-        // Move pause timer
-        else if (movePauseTimerRunning)
-        {
-            // Update the timer
-            movePauseTimer += Time.deltaTime;
-
-            // Check if its reached its goal
-            if (movePauseTimer >= moveAnimationPauseTime) // Its reached the end of the current pause
-            {
-                movePauseTimerRunning = false;
-                movePauseTimer = 0;
-                FinishMovePause();
-            }
+            creature.UpdatePossibleTargets();
         }
+
+        // Create the UI elements for each action source and action
+        uiManager.CreateUI();
+
+        // Start the first phase (predicted decision)
+        StartCoroutine(NextPhase());
     }
     
     // A new creature was created and should be added to the list
@@ -206,259 +156,141 @@ public class Game : MonoBehaviour
         AddToTeam(newCreature);
     }
 
-    public void LevelComplete()
-    {
-        Debug.Log("Level Complete");
-        foreach (Creature creature in creatures)
-        {
-            creature.UpdatePossibleTargets();
-        }
-
-        // Create the UI elements for each action source and action
-        uiManager.CreateUI();
-
-        // Start the first phase (predicted decision)
-        PhaseStart();
-    }
 
     // Most of the code for what happens in each phase (Prep, Attack, and Move are all automatic so every piece of
     // logic for them happens here)
-    public void PhaseStart()
+    public void SubmitAction(Action action)
     {
+        // Add the action to a list
+        actionStack.Add(action);
+    }
+
+    public void TeamReady()
+    {
+        // Check to see if each team is ready
+        bool allTeamsReady = true; // Let this be proven false
+        foreach (TeamManager team in teams.Values)
+        {
+            if (!team.TeamReady) // This team is not ready
+            {
+                allTeamsReady = false;
+                break;
+            }
+        }
+
+        // If all teams are ready, go to the next phase
+        if (allTeamsReady) // All teams are ready
+        {
+            StartCoroutine(NextPhase());
+        }
+    }
+
+    private IEnumerator NextPhase()
+    {
+        // Change current phase
+        UpdateCurrentPhase();
+
+        // Start the next phase
         Debug.Log(string.Format("Phase Start: {0}", currentPhase));
+
+        // Update lists of actions for this phase
+        UpdateActionLists();
 
         // Do different things depending on the phase
         switch (currentPhase)
         {
-            case phase.predictedDescision:
-                currentState = gameState.nothingSelected;
-
-                // Check if anyone is being predicted, if not then move to the next phase. Else mark everyone who needs to decide on an action
-                creaturesToDecideAction.Clear();
-                foreach (Creature creature in creatures)
-                {
-                    if (creature.Predicted) { // This creature is being predicted and therefore this phase is nescesary
-                        creaturesToDecideAction.Add(creature);
-                    }
-                }
-
-                if (creaturesToDecideAction.Count == 0) // Nobody was being predicted so we can skip to the next phase
-                {
-                    NextPhase();
-                    break;
-                }
-
-                // Loop through all creatures yet to decide and ask them for an action
-                foreach (Creature creature in creaturesToDecideAction)
-                {
-                    creature.AI();
-                }
+            case phase.PredictedDecision:
+                yield return DecisionPhase(true);
                 break;
 
-            case phase.descision:
-                // Check if everyone is being predicted (likely no), if everybody then move to the next phase. Else mark everyone who needs to decide on an action
-                creaturesToDecideAction.Clear();
-                foreach (Creature creature in creatures)
-                {
-                    if (!creature.Predicted)
-                    { // This creature is being predicted and therefore this phase is nescesary
-                        creaturesToDecideAction.Add(creature);
-                    }
-                }
-
-                if (creaturesToDecideAction.Count == 0) // Everybody was being predicted so we can skip to the next phase
-                {
-                    NextPhase();
-                    break;
-                }
-
-                // Loop through all creatures yet to decide and ask them for an action
-                foreach (Creature creature in creaturesToDecideAction)
-                {
-                    creature.AI();
-                }
+            case phase.Decision:
+                yield return DecisionPhase(false);
                 break;
 
-
-            case phase.prep:
-                // Turn off player controls (outside of camera controls)
-                currentState = gameState.uniteractable;
-
-                // Check if there are any actions in the prep phase, if no then move to the next phase. Else create a random order of which to do first
-                actionsThisPhase.Clear();
-
-                foreach (Action action in actionStack)
-                {
-                    if (action.Phase == phase.prep)
-                    {
-                        actionsThisPhase.Add(action);
-                    }
-                }
-
-                while (actionsThisPhase.Count > 0)
-                {
-                    // Randomly select the next action in the queue to do
-                    int randomIndex = Random.Range(0, actionsThisPhase.Count - 1);
-                    actionsThisPhase[randomIndex].DoAction();
-                    actionsThisPhase.RemoveAt(randomIndex);
-                }
-
-                NextPhase();
-
+            case phase.Prep:
+                yield return ActionPhase();
                 break;
-            case phase.attack:
-                // Check if there are any actions in the attack phase, if no then move to the next phase. Else, create a random order of which to do first
-                actionsThisPhase.Clear();
-
-                foreach (Action action in actionStack)
-                {
-                    if (action.Phase == phase.attack)
-                    {
-                        actionsThisPhase.Add(action);
-                    }
-                }
-
-                // Recalculate all of the creatureTargets to see if they're still in range and line of sight (walls can be summoned
-                // and creatures can dodge out of range of attacks)
-                foreach (Action action in actionsThisPhase)
-                {
-                    action.CheckTargetsStillInRange();
-                    action.RollToHit();
-                }
-
-                // Compile a list of potential targets and attackLines going to those targets
-                possibleTargetsThisRound.Clear();
-                // TODO: Actually delete the attack lines to not cause memory leaks
-                attackLinesThisRound.Clear();
-
-                // Get a list of every creature that can be hit
-                foreach (Creature creature in creatures)
-                {
-                    // Add its location as a possible target
-                    possibleTargetsThisRound.Add(creature.Space);
-                }
-
-                // Also add attack origins that don't originate from the attacker
-                foreach (Action action in actionsThisPhase)
-                {
-                    if (!action.OriginatesFromAttacker) // It does not originate from the attacker
-                    {
-                        // Add this to the list of potential targets
-                        possibleTargetsThisRound.Add(action.Origin);
-                    }
-                }
-
-                // Loop through the list of attacks and create an attack line for each possible space it targets
-                foreach (Action attack in actionsThisPhase)
-                {
-                    // Check each tile
-                    foreach (Tile target in attack.Targets)
-                    {
-                        if (possibleTargetsThisRound.Contains(target) && target != attack.Origin) // It is a valid target
-                        {
-                            // Create a new attack line pointing there
-                            attackLinesThisRound.Add(new AttackLine(attack, target));
-                        }
-                    }
-                }
-
-                // Check each attack line to join them together
-                foreach (AttackLine attackLine in attackLinesThisRound)
-                {
-                    attackLine.Check(attackLinesThisRound);
-                }
-
-                // Resolve all attacks
-                foreach (AttackLine attackLine in attackLinesThisRound)
-                {
-                    attackLine.ResolveAttacks();
-                }
-
-                // Do any more cleanup stuff
-                foreach (Action action in actionsThisPhase)
-                {
-                    action.DoAction();
-                }
-
-                NextPhase();
-
+            case phase.Attack:
+                yield return ActionPhase();
                 break;
-            case phase.move:
-                // Check if there are any actions in the move phase, if no then move to the next phase. Else, create a random order of which to do first.
-                actionsThisPhase.Clear();
-
-                foreach (Action action in actionStack)
-                {
-                    if (action.Phase == phase.move)
-                    {
-                        actionsThisPhase.Add(action);
-                    }
-                }
-
-                MovePhaseStart();
-
+            case phase.Move:
+                yield return ActionPhase();
                 break;
         }
 
         // Update the UI
         uiManager.UpdateUI();
     }
-
-    public void SubmitAction(Action action)
-    {
-        // Add the action to a list
-        actionStack.Add(action);
-
-        // Check if there is anyone left who still needs to submit an action (if not, go to the next phase)
-        action.Source.Owner.HasSubmittedAction = true;
-        bool allCreaturesDecided = true; // Let it be proven false
-        foreach (Creature creature in creaturesToDecideAction)
-        {
-            if (!creature.HasSubmittedAction) // This creature has not yet submited an action
-            {
-                allCreaturesDecided = false;
-            }
-        }
-
-        if (allCreaturesDecided) // This was the last creature to decide
-        {
-            // Move onto the next phase
-            NextPhase();
-        }
-    }
-
-    private void NextPhase()
+    private void UpdateCurrentPhase()
     {
         // Switch to the next phase
         switch (currentPhase)
         {
-            case phase.predictedDescision:
-                currentPhase = phase.descision;
+            case phase.PredictedDecision:
+                currentPhase = phase.Decision;
                 break;
-            case phase.descision:
-                currentPhase = phase.prep;
+            case phase.Decision:
+                currentPhase = phase.Prep;
                 break;
-            case phase.prep:
-                currentPhase = phase.attack;
+            case phase.Prep:
+                currentPhase = phase.Attack;
                 break;
-            case phase.attack:
-                currentPhase = phase.move;
+            case phase.Attack:
+                currentPhase = phase.Move;
                 break;
-            case phase.move:
-                currentPhase = phase.predictedDescision;
-                NewRound();
+            case phase.Move:
+                currentPhase = phase.PredictedDecision;
+                EndTurn();
                 break;
         }
+    }
+    private void UpdateActionLists()
+    {
+        actionsThisPhase.Clear();
+        castsThisPhase.Clear();
+        attacksThisPhase.Clear();
+        buffsThisPhase.Clear();
+        movesThisPhase.Clear();
+        foreach (Action action in actionStack)
+        {
+            // Test if the action is in this phase
+            if (action.Phase == currentPhase) // It is in this phase
+            {
+                // Save it as part of this phase
+                actionsThisPhase.Add(action);
 
-        
+                // Test which type of action it is
+                switch (action.ActionType)
+                {
+                    case actionType.cast: // Cast action
+                        castsThisPhase.Add((CastAction)action);
+                        break;
 
-        // Start the next phase
-        PhaseStart();
+                    case actionType.attack: // Attack action
+                        attacksThisPhase.Add((Attack)action);
+                        break;
+
+                    case actionType.aoeAttack: // AOE Attack action
+                        attacksThisPhase.Add((AOEAttack)action);
+                        break;
+
+                    case actionType.move: // Move action
+                        movesThisPhase.Add((Move)action);
+                        break;
+
+                    case actionType.buff: // Buff action
+                        buffsThisPhase.Add((BuffAction)action);
+                        break;
+                }
+            }
+        }
+
     }
 
-    private void NewRound()
+    private void EndTurn()
     {
-        // TODO: Delete creatures who died
+        // Remove creatures who died
+        // TODO: Delete creatures to stop memory leaks
         foreach (Creature creature in creatures)
         {
             if (!creature.IsAlive)
@@ -475,92 +307,526 @@ public class Game : MonoBehaviour
         }
         deadCreatures.Clear();
 
-        // Lower cooldowns and recharges of remaining creatures
-        foreach (Creature creature in creatures)
+        // Lower cooldowns and recharges and stuff
+        foreach (TeamManager team in teams.Values)
         {
-            creature.EndTurn();
+            team.EndTurn();
         }
 
         // Clear action list
         actionStack.Clear();
     }
 
+    // PREDICTED DECISISION PHASE
 
-    // MOVE PHASE LOGIC
-    private void MovePhaseStart()
+    // DECISISION PHASE
+    private IEnumerator DecisionPhase(bool creaturesShouldBePredicted)
     {
-        Debug.Log("MovePhaseStart()");
-        // Get the furthest move this phase
-        longestMove = 0;
-        foreach (Action move in actionsThisPhase)
+        currentState = gameState.nothingSelected;
+        // Check if everyone is being predicted (likely no), if everybody then move to the next phase. Else mark everyone who needs to decide on an action
+        creaturesToDecideAction.Clear();
+        foreach (Creature creature in creatures)
         {
-            if (move.Targets.Count - 1 > longestMove) // This move is longer than what was recorded to be the longest before
-            {
-                longestMove = move.Targets.Count - 1;
+            if (creature.Predicted == creaturesShouldBePredicted)
+            { // This creature is being predicted and therefore this phase is nescesary
+                creaturesToDecideAction.Add(creature);
             }
+        }
+
+        if (creaturesToDecideAction.Count == 0) // Everybody was being predicted so we can skip to the next phase
+        {
+            yield return NextPhase();
+        }
+
+        // Loop through all creatures yet to decide and ask them for an action
+        foreach (Creature creature in creaturesToDecideAction)
+        {
+            creature.AI();
+        }
+    }
+
+    // ACTION PHASE (a phase where actions are resolved, like Prep, Attack, and Move)
+    private IEnumerator ActionPhase()
+    {
+        CurrentState = gameState.uninteractable;
+
+        // Update the UI
+        uiManager.UpdateUI();
+
+        // The lists actionsThisPhase, castsThisPhase, buffsThisPhase ect... are all updated already
+
+        // Resolve cast actions
+        yield return ResolveCastActions();
+
+        // Resolve Attack actions
+        yield return ResolveAttackActions();
+
+        // Resolve Buff Actions
+        yield return ResolveBuffActions();
+
+        // Resolve Move Actions
+        yield return ResolveMoveActions();
+
+        // Go to the next phase
+        yield break;
+    }
+
+    // Returns true if all cast actions are done
+    private IEnumerator ResolveCastActions()
+    {
+        //Debug.Log("ResolveCastActions() called");
+
+        // Do each action, pausing in between
+        foreach (CastAction cast in castsThisPhase)
+        {
+            // Move the camera to them
+            cameraFocus.ShowPosition(cast.Source.Owner);
+
+            // Wait for the camera to catch up
+            yield return new WaitForSeconds(animationPauseTime);
+
+            // Do the action
+            cast.DoAction();
+
+            // Start the timer
+            yield return new WaitForSeconds(castAnimationTime);
+        }
+    }
+
+    private IEnumerator ResolveAttackActions()
+    {
+        //Debug.Log("ResolveAttackActions() called");
+
+        // Recalculate all of the creatureTargets to see if they're still in range and line of sight (walls can be summoned
+        // and creatures can dodge out of range of attacks)
+        foreach (Attack attack in attacksThisPhase)
+        {
+            attack.CheckTargetsStillInRange();
+            attack.RollToHit();
+        }
+
+        // Compile a list of potential targets and attackLines going to those targets
+        possibleTargetsThisRound.Clear();
+        // TODO: Actually delete the attack lines to not cause memory leaks
+        attackLinesThisPhase.Clear();
+
+        // Get a list of every creature that can be hit
+        foreach (Creature creature in creatures)
+        {
+            // Add its location as a possible target
+            possibleTargetsThisRound.Add(creature.Space);
+        }
+
+        // Also add attack origins that don't originate from the attacker
+        foreach (Attack attack in attacksThisPhase)
+        {
+            if (!attack.OriginatesFromAttacker) // It does not originate from the attacker
+            {
+                // Add this to the list of potential targets
+                possibleTargetsThisRound.Add(attack.Origin);
+            }
+        }
+
+        // Loop through the list of attacks and create an attack line for each possible space it targets
+        foreach (Attack attack in attacksThisPhase)
+        {
+            // Check each tile
+            foreach (Tile target in attack.Targets)
+            {
+                if (possibleTargetsThisRound.Contains(target) && target != attack.Origin) // It is a valid target
+                {
+                    // Create a new attack line pointing there
+                    attackLinesThisPhase.Add(new AttackLine(attack, target));
+                }
+                // Don't print that for every aoe target
+                else if (attack.TargetType != targetTypes.aoe) // Its not a valid target and isn't AOE
+                {
+                    Debug.Log("Invalid targets for " + attack.DisplayName);
+                }
+            }
+
+            // Add each missed attack
+            foreach (Creature target in attack.MissedCreatureTargets)
+            {
+                // Create a new attack line, but include that it missed
+                attackLinesThisPhase.Add(new AttackLine(attack, target.Space, true));
+            }
+        }
+
+        // Check each attack line to join them together
+        foreach (AttackLine attackLine in attackLinesThisPhase)
+        {
+            attackLine.Check(attackLinesThisPhase);
+        }
+
+        // TODO: Start on a pause and move the camera to show the animations during each pause
+
+        // Start index at 0 (it gets increased by 1 before its checked)
+        currentAttackLineIndex = -1;
+
+        // Go to the first attack
+        yield return NextAttack();
+    }
+
+    private IEnumerator ResolveBuffActions()
+    {
+        //Debug.Log("ResolveBuffActions() called");
+
+        // Do each action, pausing in between
+        foreach (BuffAction buff in buffsThisPhase)
+        {
+            // Move the camera to them
+            cameraFocus.ShowPosition(buff.Source.Owner);
+
+            // Wait for the camera to catch up
+            yield return new WaitForSeconds(animationPauseTime);
+
+            // Do the action
+            buff.DoAction();
+
+            // Start the timer
+            yield return new WaitForSeconds(buffAnimationTime);
+        }
+    }
+
+    private IEnumerator ResolveMoveActions()
+    {
+        //Debug.Log("ResolveMoveActions()");
+
+        //longestMove = 0;
+        foreach (Move move in movesThisPhase)
+        {
+            // Tell each moving creature that they're moving
+            move.Source.Owner.MovingThisPhase = true;
         }
 
         currentMoveStep = 1;
 
-        MoveNextStep();
+        yield return MoveNextStep();
     }
-    private void MoveNextStep()
+
+    // ATTACK PHAES
+/*    private void AttackPhase()
     {
-        // Test if there are any moves left
-        if (currentMoveStep > longestMove) // There are no moves left
+        currentState = gameState.uninteractable;
+        // Recalculate all of the creatureTargets to see if they're still in range and line of sight (walls can be summoned
+        // and creatures can dodge out of range of attacks)
+        foreach (Action action in actionsThisPhase)
         {
-            foreach (Action move in actionsThisPhase)
+            action.CheckTargetsStillInRange();
+            action.RollToHit();
+        }
+
+        // Compile a list of potential targets and attackLines going to those targets
+        possibleTargetsThisRound.Clear();
+        // TODO: Actually delete the attack lines to not cause memory leaks
+        attackLinesThisPhase.Clear();
+
+        // Get a list of every creature that can be hit
+        foreach (Creature creature in creatures)
+        {
+            // Add its location as a possible target
+            possibleTargetsThisRound.Add(creature.Space);
+        }
+
+        // Also add attack origins that don't originate from the attacker
+        foreach (Action action in actionsThisPhase)
+        {
+            if (!action.OriginatesFromAttacker) // It does not originate from the attacker
             {
+                // Add this to the list of potential targets
+                possibleTargetsThisRound.Add(action.Origin);
+            }
+        }
+
+        // Loop through the list of attacks and create an attack line for each possible space it targets
+        foreach (Action attack in actionsThisPhase)
+        {
+            // Check each tile
+            foreach (Tile target in attack.Targets)
+            {
+                if (possibleTargetsThisRound.Contains(target) && target != attack.Origin) // It is a valid target
+                {
+                    // Create a new attack line pointing there
+                    attackLinesThisPhase.Add(new AttackLine(attack, target));
+                }
+                // Don't print that for every aoe target
+                else if (attack.TargetType != targetTypes.aoe) // Its not a valid target and isn't AOE
+                {
+                    Debug.Log("Invalid targets for " + attack.DisplayName);
+                }
+            }
+        }
+
+        // Check each attack line to join them together
+        foreach (AttackLine attackLine in attackLinesThisPhase)
+        {
+            attackLine.Check(attackLinesThisPhase);
+        }
+
+        // TODO: Start on a pause and move the camera to show the animations during each pause
+
+        // Start index at 0 (it gets increased by 1 before its checked)
+        currentAttackLineIndex = -1;
+
+        // Go to the first attack
+        NextAttack();
+    }
+*/
+    private IEnumerator NextAttack()
+    {
+        // Go to the next index
+        currentAttackLineIndex += 1;
+
+        // Stop if there are no attacks left
+        if (currentAttackLineIndex >= attackLinesThisPhase.Count) // There are no attacks left
+        {
+            // Run the cleanup code for each action (adding recharge and costing energy and stuff)
+            foreach (Attack attack in attacksThisPhase)
+            {
+                attack.DoAction();
+            }
+            // Break out of NextAttack() (to finish ResolveAttackActions() and go to the next line in ActionPhase())
+            yield break;
+        }
+
+
+        // Only execute the attackLine if its supposed to be executed
+        if (attackLinesThisPhase[currentAttackLineIndex].ShouldBeExecuted) // this attack line should be executed
+        {
+            // Cache the attackLine for ease of reference
+            AttackLine attackLine = attackLinesThisPhase[currentAttackLineIndex];
+
+            // Point the camera at it
+            attackLine.ShowInCamera(cameraFocus);
+
+            // Wait for the camera to catch up
+            yield return new WaitForSeconds(animationPauseTime);
+
+            // Run this attack and start the timer
+            attackLine.ResolveAttacks();
+            yield return new WaitForSeconds(attackAnimationTime);
+        }
+
+        // Go to the next attack
+        yield return NextAttack();
+    }
+
+    // MOVE PHASE
+/*    private void MovePhase()
+    {
+        currentState = gameState.uninteractable;
+        Debug.Log("MovePhaseStart()");
+
+        // Get the furthest move this phase
+        longestMove = 0;
+        foreach (Action move in actionsThisPhase)
+        {
+            if (move.TotalSteps > longestMove) // This move is longer than what was recorded to be the longest before
+            {
+                longestMove = move.TotalSteps;
+            }
+
+            // Also tell each moving creature that they're moving
+            move.Source.Owner.MovingThisPhase = true;
+        }
+
+        currentMoveStep = 1;
+
+        StartCoroutine(MoveNextStep());
+    }*/
+    private IEnumerator MoveNextStep()
+    {
+        //Debug.Log("MoveNextStep() called");
+
+        // Test if there are any moves left
+        bool allMovesDone = true; // Remains true if all moves have finished (proven false if otherwise)
+        foreach (Move move in movesThisPhase)
+        {
+            if (!move.MoveFinished) // This move is not finished
+            {
+                allMovesDone = false;
+                break;
+            }
+        }
+
+        if (allMovesDone) // There are no moves left
+        {
+            // Have each action cost their energy and stuff
+            foreach (Move move in movesThisPhase)
+            {
+                // Have this move cost energy (and recharge and cooldown and all that)
                 move.DoAction();
             }
-            NextPhase();
-            return;
+
+            // Go to the next phase
+            StartCoroutine(NextPhase());
+            yield break;
         }
 
-        // Test if any moves would collide
-        foreach (Action move in actionsThisPhase)
-        {
-            // TODO: Make this work lol
-            //move.CheckCollision(creatures);
-        }
 
         // Tell each move action to go
-        foreach (Action move in actionsThisPhase)
+        foreach (Move move in movesThisPhase)
         {
             move.PlayAnimation();
         }
 
-        // Start the timer
-        moveTimerRunning = true;
-    }
-    // Called every frame creatures are moving
-    private void UpdateMove()
-    {
-        float percentThere = moveTimer / moveAnimationTime;
-        foreach (Action move in actionsThisPhase)
+        // Show all of the moves in the camera
+        // TODO: This probably causes a memory leak
+        List<Vector3> spaces = new List<Vector3> { };
+        foreach (Move move in movesThisPhase)
         {
-            move.Source.Owner.DisplayMovePosition(percentThere);
+            spaces.Add(move.CurrentMoveToTile.RealPosition);
         }
-        // TODO: Call event or something
-    }
-    // Called once the move timer is done
-    private void FinishMove()
-    {
-        // Tell each creature they reached the end of this move
-        foreach (Action move in actionsThisPhase)
+        cameraFocus.ShowPosition(spaces, false);
+
+        // Test if any moves would collide
+        ResolveMoveCollisions();
+
+        // Wait for the animations to play
+        //yield return wait(moveTimer);
+        yield return new WaitForSeconds(moveAnimationTime);
+
+        // Finish each step
+        foreach (Move move in movesThisPhase)
         {
             move.Source.Owner.FinishMove();
         }
 
-        // Start the pause timer
-        movePauseTimerRunning = true;
-    }
-    // Called once the pause between moves is done
-    private void FinishMovePause()
-    {
-        currentMoveStep += 1;
+        // Pause in between move steps
+        //yield return wait(movePauseTimer);
+        yield return new WaitForSeconds(moveAnimationPauseTime);
 
-        MoveNextStep();
+        // Recursively start the next step
+        currentMoveStep += 1;
+        yield return MoveNextStep();
+    }
+
+
+    // called every move step to check if creatures are colliding and resolve the result of that
+    private void ResolveMoveCollisions()
+    {
+        // Empty each creature's list of collisions this step
+        foreach (Creature creature in creatures)
+        {
+            creature.CollisionsThisStep.Clear();
+        }
+
+        // Loop through each move this phase
+        foreach (Move move in movesThisPhase)
+        {
+            // Test if the move is still happening
+            if (!move.MoveFinished) // The move is still going
+            {
+                // Check with each creature if it will collide
+                foreach (Creature creature in creatures)
+                {
+                    // Skip this creature if its the move's owner
+                    if (creature == move.Source.Owner) // This move is looking at its own owner
+                    {
+                        // Skip this creature
+                        continue;
+                    }
+
+                    // Test if this is 2 creatures moving to the same space, or a moving creature colliding with a stationary creature
+                    // We already know move.Source.Owner is moving
+                    if (creature.MovingThisPhase) // Both creatures are moving
+                    {
+                        // Test if they are going into the same spot
+                        if (
+                        creature.PreviousMoveToTile == move.CurrentMoveToTile && // This mover is going where the creature was
+                        creature.TargetMoveToTile == move.PreviousMoveToTile) // This creature is going where the mover was
+                        {
+                            // Mark these 2 creatures as colliding with eachother
+                            // (The other creature will also detect this collision and add it themselves)
+                            move.Source.Owner.CollisionsThisStep.Add(creature);
+                        }
+                        else if (creature.TargetMoveToTile == move.CurrentMoveToTile) // Both creatures are moving to the same tile
+                        {
+                            // Mark these 2 creatures as colliding with eachother
+                            // (The other creature will also detect this collision and add it themselves)
+                            move.Source.Owner.CollisionsThisStep.Add(creature);
+                        }
+                    }
+                    else // Only move.Source.Owner is moving
+                    {
+                        // Test if they will collide
+                        if (move.CurrentMoveToTile == creature.Space) // Its going to ocupy the same space as another creature next move
+                        {
+                            // Mark these 2 creatures as colliding with eachother
+                            move.Source.Owner.CollisionsThisStep.Add(creature);
+                            creature.CollisionsThisStep.Add(move.Source.Owner);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Resolve each collision
+        foreach (Creature creature in creatures)
+        {
+            // Loop through each collision (while removing them from the list)
+            // The collision we're testing will always be index 0
+            for (int i = 0; i < creature.CollisionsThisStep.Count; i ++)
+            {
+                // Cache the other creature
+                Creature otherCreature = creature.CollisionsThisStep[0];
+                //Debug.Log("Collision resolution between " + creature.DisplayName + " and " + otherCreature.DisplayName + ". Other creature has " + otherCreature.CollisionsThisStep.Count + " collisions");
+
+                // Make sure this collision hasn't already been resolved (both creatures have eachother in their lists)
+                if (otherCreature.CollisionsThisStep.Contains(creature)) // The collision has not yet been resolved (both creatures have eachother in their lists)
+                {
+                    // Store the winner and loser of the strength check
+                    Creature winner = StatTest(creature, creature.CollisionsThisStep[0], stats.strength);
+                    Creature loser;
+                    if (winner == creature) // The first creature won
+                    {
+                        loser = otherCreature;
+                    }
+                    else // The second creature won
+                    {
+                        loser = creature;
+                    }
+
+                    // Test who is moving
+                    if (winner.MovingThisPhase && loser.MovingThisPhase) // Both creatures were moving 
+                    {
+                        // Attempt to push the loser if the winner is attempting to move into their current space
+                        if (winner.TargetMoveToTile == loser.PreviousMoveToTile) // They were going to trade spaces (rather than both going for a single contested space)
+                        {
+                            // Attempt to push them
+                            if (!loser.Push(winner.Space, 1)) // The push failed
+                            {
+                                winner.MovingThisPhase = false;
+                            }
+                        }
+
+                        loser.MovingThisPhase = false;
+                    }
+                    else if (winner.MovingThisPhase) // Only the winner was moving (the loser was standing still)
+                    {
+                        Debug.Log("Only " + winner.DisplayName + " was moving, and they won");
+
+                        // Attempt to push them
+                        if (!loser.Push(winner.Space, 1)) // The push was not successful (they are in front of a wall or something)
+                        {
+                            winner.MovingThisPhase = false;
+                        }
+                    }
+                    else // The loser was moving (the winner was standing still)
+                    {
+                        Debug.Log("Only " + loser.DisplayName + " was moving, and they won");
+
+                        loser.MovingThisPhase = false;
+                    }
+
+
+                }
+
+                // Remove this collision from the list
+                creature.CollisionsThisStep.RemoveAt(0);
+            }
+        }
     }
     
     // Create or add to an existing team manager
@@ -578,11 +844,11 @@ public class Game : MonoBehaviour
         // The creature records the team manager in AddTeamMember() in TeamManager.cs
     }
 
-    public Creature StatTest(Creature creature1, Creature creature2, Game.stats stat)
+    public Creature StatTest(Creature creature1, Creature creature2, stats stat)
     {
         // Roll the dice
-        int creature1Roll = Random.Range(1, 21);
-        int creature2Roll = Random.Range(1, 21);
+        int creature1Roll = UnityEngine.Random.Range(1, 21);
+        int creature2Roll = UnityEngine.Random.Range(1, 21);
 
         // Assign the propper stat bonuses
         switch (stat)
@@ -615,9 +881,8 @@ public class Game : MonoBehaviour
         }
         else // It was a tie
         {
-            Debug.Log(stat + " test between " + creature1.DisplayName + " and " + creature2.DisplayName + ". Tie!");
-            // TODO: Find a better way to resolve this lol
-            return null;
+            Debug.Log(stat + " test between " + creature1.DisplayName + " and " + creature2.DisplayName + ". Tie! Trying again...");
+            return StatTest(creature1, creature2, stat);
         }
     }
 

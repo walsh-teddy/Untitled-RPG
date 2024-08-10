@@ -17,7 +17,10 @@ public class Creature : MonoBehaviour
 
     // Animation variables
     protected Animator animationController;
-    private Tile targetTile;
+    private Tile targetMoveToTile;
+    private Tile previousMoveToTile; // Used primarilly for collision detection
+    MoveAnimationScript moveAnimationScript; // Component that goes onto the creature that the move animation can access
+    protected bool movingThisPhase = false; // Used for movement collision tests
 
     [Header("Physical Traits")]
     [SerializeField] protected string displayName;
@@ -25,6 +28,12 @@ public class Creature : MonoBehaviour
     [SerializeField] protected float stepHeight;
     [SerializeField] protected float eyeHeight;
     [SerializeField] protected GameObject body;
+    [SerializeField] protected GameObject rightHand;
+    [SerializeField] protected GameObject leftHand;
+    protected bool rightHandOpen = true;
+    protected bool leftHandOpen = true;
+    [SerializeField] protected List<GameObject> prefabInventory; // List of prefabs
+    // TODO: Make a seperate list of equipped weapons
 
     [Header("Stats")]
     // stats that only change outside of the game
@@ -43,9 +52,17 @@ public class Creature : MonoBehaviour
     [SerializeField] protected TextMeshProUGUI healthBarText;
     [SerializeField] protected Slider energyBarSlider;
     [SerializeField] protected TextMeshProUGUI energyBarText;
+    [SerializeField] protected FloatingText floatingText;
+    protected GameObject uiRoot; // gameObject that all the action source buttons are childed to (just used by player.cs)
+    public GameObject UIRoot
+    {
+        get { return uiRoot; }
+        set { uiRoot = value; }
+    }
     public int Defence
     {
         get { return baseDefence + dexterity; }
+        set { baseDefence = value; }
     }
 
     // Action logic
@@ -61,10 +78,11 @@ public class Creature : MonoBehaviour
     protected int health;
     protected int damagedMaxEnergy;
     protected int energy;
-/*    protected List<Item> equippedItems;
-*/    
+    protected int armor = 0;
+    /*    protected List<Item> equippedItems;
+    */
     protected bool predicted;
-    protected bool movingThisPhase = false; // Used for movement collision tests
+    protected List<LastingBuff> activeBuffs = new List<LastingBuff> { };
 
     // Action Source stuff
     // TODO: Make these dictionaries rather than lists
@@ -73,6 +91,14 @@ public class Creature : MonoBehaviour
     {
         get { return activeActionSources; }
     }
+
+    // Move collision data
+    protected List<Creature> collisionsThisStep = new List<Creature> { };
+    public List<Creature> CollisionsThisStep
+    {
+        get { return collisionsThisStep; }
+    }
+
 
     // Properties
     public string DisplayName
@@ -86,19 +112,95 @@ public class Creature : MonoBehaviour
     }
     public int MaxHealth
     {
-        get { return maxHealth; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.maxHealth) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return maxHealth + statIncrease;
+        }
+        set { maxHealth = value; }
     }
     public int Str
     {
-        get { return strength; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.strength) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return strength + statIncrease;
+        }
+        set { strength = value; }
     }
     public int Dex
     {
-        get { return dexterity; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.dexterity) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return dexterity + statIncrease;
+        }
+        set { dexterity = value; }
     }
     public int Int
     {
-        get { return intellect; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.intellect) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return intellect + statIncrease;
+        }
+        set { intellect = value; }
     }
     public int Energy
     {
@@ -107,11 +209,72 @@ public class Creature : MonoBehaviour
     }
     public int MaxEnergy
     {
-        get { return maxEnergy; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.maxEnergy) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return maxEnergy + statIncrease;
+        }
+        set { maxEnergy = value; }
     }
     public int Speed
     {
-        get { return speed; }
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.speed) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return speed + statIncrease;
+        }
+        set { speed = value; }
+    }
+    public int Armor
+    {
+        get
+        {
+            // Loop through each of the active buffs to see if any increased this stat
+            int statIncrease = 0;
+            foreach (LastingBuff activeBuff in activeBuffs)
+            {
+                // Loop through each stat increase in this lasting buff
+                foreach (statBuff statBuff in activeBuff.buffs)
+                {
+                    // Check if this increases this stat
+                    if (statBuff.stat == buffableCreatureStats.armor) // This buff increases this stat
+                    {
+                        statIncrease += statBuff.ammount;
+                    }
+                }
+            }
+
+            return armor + statIncrease;
+        }
+        set { armor = value; }
     }
     public float Height
     {
@@ -147,12 +310,6 @@ public class Creature : MonoBehaviour
     {
         get { return health > 0; }
     }
-
-    public bool HasSubmittedAction
-    {
-        get { return hasSubmittedAction; }
-        set { hasSubmittedAction = value; }
-    }
     public string Team
     {
         get { return team; }
@@ -171,6 +328,36 @@ public class Creature : MonoBehaviour
         get { return teamManager; }
         set { teamManager = value; }
     }
+    public Vector3 HeadPosition
+    {
+        get
+        {
+            Vector3 headPosition = space.RealPosition;
+            headPosition.y += height;
+            return headPosition;
+        }
+    }
+    public Animator AnimationController
+    {
+        get { return animationController; }
+    }
+    public List<LastingBuff> ActiveBuffs
+    {
+        get { return activeBuffs; }
+    }
+
+    public GameObject CreatureCanvas
+    {
+        get { return canvas.gameObject; }
+    }
+    public Tile TargetMoveToTile
+    {
+        get { return targetMoveToTile; }
+    }
+    public Tile PreviousMoveToTile
+    {
+        get { return previousMoveToTile; }
+    }
 
     // Methods
     private void Awake()
@@ -182,53 +369,69 @@ public class Creature : MonoBehaviour
 
         // Cache the value of the animation controller
         animationController = gameObject.GetComponent<Animator>();
+
+        // Create the move animation script
+        moveAnimationScript = gameObject.GetComponent<MoveAnimationScript>();
+        if (moveAnimationScript == null)
+        {
+            Debug.LogError(displayName + " could not find a moveAnimationScript component. Make sure the prefab has one attatched!");
+        }
     }
 
     private void Update()
     {
+        // Point the floating health and stuff at the camera
         canvas.transform.rotation = Camera.main.transform.rotation;
+
+        // Update the player's position if they're moving
+        if (moveAnimationScript.playingMoveAnimation && movingThisPhase) // The move animation is playing and the move was not interrupted
+        {
+            gameObject.transform.position = space.RealPosition + (targetMoveToTile.RealPosition - space.RealPosition) * moveAnimationScript.percentageBetweenTiles;
+        }
     }
 
     // Called by a move object in DoAction()
     // Already assumes the move is legal so don't need to check here
     public void StartMove(Tile targetTile)
     {
-        // Check if you would collide with something
-        if (!targetTile.IsOpen) // The target tile is open
+        // Update target tile
+        previousMoveToTile = targetMoveToTile;
+        targetMoveToTile = targetTile;
+
+        // Rotate to face the new tile before moving (if its moving somewhere)
+        if (targetTile != space) // The move's target tile was NOT the creature's space (this sometimes happens while chasing)
         {
-            // TODO: Do some stuff with bumping into things
-            // This would probably be done by Game.cs in the move phase
-            // Just a failsafe for now so things don't exist on the same tile
+            RotateToFaceTile(targetTile);
         }
-
-        this.targetTile = targetTile;
-
-        // Rotate to face the new tile before moving
-        RotateToFaceTile(targetTile);
-
-        animationController.SetBool("IsMoving", true);
-
-        // Update the gameObject's position
-        DisplayMovePosition(0);
     }
 
-    public void DisplayMovePosition(float percentThere)
+/*    public void DisplayMovePosition(float percentThere)
     {
         gameObject.transform.position = space.RealPosition + (targetTile.RealPosition - space.RealPosition) * percentThere;
-    }
+    }*/
 
     public void FinishMove()
     {
+        // Make sure the move wasn't interrupted
+        if (!movingThisPhase) // The move was interrupted
+        {
+            DisplayPosition();
+            return;
+        }
+        // Update object references
+        ChangeSpaceTo(targetMoveToTile);
+
+        targetMoveToTile = space;
+    }
+
+    public void ChangeSpaceTo(Tile newTile)
+    {
         // Update object references
         space.Occupant = null;
-        space = targetTile;
+        space = newTile;
         space.Occupant = this;
 
-        targetTile = space;
-
         DisplayPosition();
-
-        animationController.SetBool("IsMoving", false);
     }
 
     // When moving or attacking or doing anything targeted, face towards the target tile
@@ -262,13 +465,98 @@ public class Creature : MonoBehaviour
         this.space = space;
         DisplayPosition();
         ResetPlannedMovement();
+        targetMoveToTile = space; // Seting this as a non-null value as a failsafe
+        previousMoveToTile = space;
 
         // get all the different stats at correct starting ammounts
         health = maxHealth;
         damagedMaxEnergy = maxEnergy;
         energy = maxEnergy;
 
-        activeActionSources.Add(new Self(this));
+        // Create a new weapon for each prefab in the starting inventory
+        foreach (GameObject prefab in prefabInventory)
+        {
+            ActionSource source = null;
+            switch (prefab.GetComponent<ActionSource>().HandCount)
+            {
+                case 1: // 1 handed
+                    // Decide which hand to put it in
+                    // TODO: Play an animation to move the hands to the correct spot (the default might not be enough)
+                    if (rightHandOpen) // Right hand is open
+                    {
+                        // Create the weapon
+                        source = Instantiate(prefab, rightHand.transform).GetComponent<ActionSource>();
+                        source.HeldHand = hand.Right;
+                        rightHandOpen = false;
+                        animationController.SetTrigger("1HRightInitial");
+                    }
+                    else if (leftHandOpen) // Left hand is open
+                    {
+                        // Create the weapon
+                        source = Instantiate(prefab, leftHand.transform).GetComponent<ActionSource>();
+                        source.HeldHand = hand.Left;
+                        leftHandOpen = false;
+                        source.FlipToLeftHand();
+                        animationController.SetTrigger("1HLeftInitial");
+                    }
+                    else
+                    {
+                        Debug.LogError("Both hands taken. Can't have more than 2 weapons, you fucking idiot bastard");
+                        source = Instantiate(prefab, body.transform).GetComponent<ActionSource>(); // Hopefully this should never trigger
+                        source.HeldHand = hand.None;
+                    }
+                    break;
+
+                case 2: // 2 hand weapons
+                    // Make sure both hands are open
+                    if (rightHandOpen && leftHandOpen)
+                    {
+                        // Create the weapon object in the right hand
+                        source = Instantiate(prefab, rightHand.transform).GetComponent<ActionSource>();
+                        source.HeldHand = hand.Both;
+                        source.gameObject.name = "Weapon01"; // TODO: make this scale with more weapons maybe
+
+                        // Attatch the left hand to the weapon
+                        leftHand.transform.parent = source.LeftHandRest.transform;
+
+                        // Move both hands to the correct positions using animations depending on if its a pole or a hilt
+                        if (source.AnimationType == weaponAnimationType.hilt)
+                        {
+                            animationController.SetTrigger("hilt2HInitial");
+                        }
+                        else if (source.AnimationType == weaponAnimationType.pole)
+                        {
+                            animationController.SetTrigger("pole2HInitial");
+                        }
+                        else if (source.AnimationType == weaponAnimationType.bow)
+                        {
+                            animationController.SetTrigger("bow2HInitial");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("Both hands taken. Can't have more than 2 weapons, you fucking idiot bastard");
+                        source = Instantiate(prefab, body.transform).GetComponent<ActionSource>(); // Hopefully this should never trigger
+                        source.HeldHand = hand.None;
+                    }
+                    break;
+                case 0: // Special source that doesn't take up a hand slot
+                    {
+                        // Create the weapon object on the user
+                        source = Instantiate(prefab, transform).GetComponent<ActionSource>();
+                    }
+                    break;
+            }
+
+            // Add the instantiated gameObjets's actionSource component to the list
+            activeActionSources.Add(source);
+        }
+
+        // Create() every action source
+        foreach (ActionSource source in activeActionSources)
+        {
+            source.Create(this);
+        }
     }
 
     public void TakeDamage(int damage, bool canGuard)
@@ -287,17 +575,8 @@ public class Creature : MonoBehaviour
             // TODO: Do a concentration check
             health -= damage;
             Debug.Log(displayName + " took " + damage + " damage. Is now at " + health + " health");
-        }
-    }
-    public void HealDamage(int damage)
-    {
-        // Increase health
-        health += damage;
-
-        // Cap health at max
-        if (health > maxHealth)
-        {
-            health = maxHealth;
+            ShowFloatingText("Took " + damage + " damage");
+            UpdateUI();
         }
     }
 
@@ -325,17 +604,18 @@ public class Creature : MonoBehaviour
 
     public virtual void EndTurn()
     {
-        // TODO: Lower cooldowns and recharges
+        // Lower cooldowns and recharges
         foreach (ActionSource actionSource in activeActionSources)
         {
             actionSource.EndTurn();
         }
 
+        UpdateActiveBuffs();
         ResetPlannedMovement();
-        UnSubmitAction();
+        UnSubmitAllActions();
         UpdatePossibleTargets();
+        movingThisPhase = false;
     }
-
 
     // TODO: Move this to an enemy class
     public virtual void AI()
@@ -389,12 +669,14 @@ public class Creature : MonoBehaviour
     public virtual void SubmitAction(Action action)
     {
         // TODO: Make sure they're not submitting multiple major actions or a minor action in the same phase as another action
+        if (!action.Playable) // The action is not playable (insufficient energy or already submitted something or whatever)
+        {
+            Debug.LogError("Non-playable action submitted");
+            return;
+        }
 
         // Save the action
         submittedActions.Add(action);
-
-        // Add the submitted action to the list
-        game.SubmitAction(action);
 
         // Update planned movement if this was a move (checked in the function)
         UpdatePlannedMovement();
@@ -402,6 +684,9 @@ public class Creature : MonoBehaviour
         // Tell all allies to update possible targets
         // TODO: Possibly make this just for movement actions since thats what this is here for
         teamManager.UpdatePossibleTargets();
+
+        // Add the submitted action to the list
+        game.SubmitAction(action);
     }
 
     public virtual void UpdatePossibleTargets()
@@ -417,22 +702,25 @@ public class Creature : MonoBehaviour
     {
         // Test if the submitted action is movement
         // TODO: Make this work for multiple actions
-        if (submittedActions[0].IsMove)
+        foreach (Action action in submittedActions)
         {
-            // Test if its in the movement phase or prep phase
-            if (submittedActions[0].Phase == Game.phase.move) // Move phase
+            if (action.ActionType == actionType.move)
             {
-                // TODO: Might be causing a memory leak (not destroying old list) (its probably fine)
-                plannedMovement[1] = submittedActions[0].Targets;
-            }
-            else // Prep phase
-            {
-                // TODO: Might be causing a memory leak (not destroying old list)
-                plannedMovement[0] = submittedActions[0].Targets;
+                // Test if its in the movement phase or prep phase
+                if (action.Phase == phase.Move) // Move phase
+                {
+                    // TODO: Might be causing a memory leak (not destroying old list) (its probably fine)
+                    plannedMovement[1] = action.Targets;
+                }
+                else // Prep phase
+                {
+                    // TODO: Might be causing a memory leak (not destroying old list)
+                    plannedMovement[0] = action.Targets;
 
-                // Update the planned movement of move phase to start the final spot of this prep phase
-                plannedMovement[1].Clear();
-                plannedMovement[1][0] = plannedMovement[0][plannedMovement[0].Count - 1];
+                    // Update the planned movement of move phase to start the final spot of this prep phase
+                    plannedMovement[1].Clear();
+                    plannedMovement[1].Add(plannedMovement[0][plannedMovement[0].Count - 1]);
+                }
             }
         }
     }
@@ -445,27 +733,33 @@ public class Creature : MonoBehaviour
         plannedMovement[1].Add(space);
     }
 
-    public void UpdateUI()
+    public virtual void UpdateUI()
     {
         // HEALTH BAR
         // Slider
-        healthBarSlider.value = (float)health / (float)maxHealth;
+        healthBarSlider.value = (float)health / (float)MaxHealth;
         // Text
-        healthBarText.text = ("Health: " + health + "/" + maxHealth);
+        healthBarText.text = ("Health: " + health + "/" + MaxHealth);
 
         // ENERGY BAR
         // Slider
-        energyBarSlider.value = (float)energy / (float)maxEnergy;
+        energyBarSlider.value = (float)energy / (float)MaxEnergy;
         // Text
-        energyBarText.text = ("Energy: " + energy + "/" + maxEnergy);
+        energyBarText.text = ("Energy: " + energy + "/" + MaxEnergy);
 
         // TODO: Special energy
     }
 
+    public void ShowFloatingText(string text)
+    {
+        floatingText.ShowText(text);
+    }
+
     public void Die()
     {
+        Debug.Log("Die called for " + displayName);
         // Remove this from the team manager
-        teamManager.TeamMembers.Remove(this);
+        teamManager.RemoveTeamMember(this);
 
         // Remove this from the tile it is standing on
         space.Occupant = null;
@@ -474,30 +768,53 @@ public class Creature : MonoBehaviour
         GameObject.Destroy(gameObject);
     }
 
-    // THESE METHODS ARE JUST HERE SO THE PLAYER CLASS CAN OVERWRITE THEM
-    public virtual void UnSubmitAction()
+    public ActionSource GetActionSourceByName(string displayName)
     {
-        // Make sure they've submitted an action
-        if (!hasSubmittedAction)
+        foreach (ActionSource source in activeActionSources)
         {
-            Debug.Log("This creature has not yet submitted an action");
+            if (source.DisplayName == displayName)
+            {
+                return source;
+            }
+        }
+
+        Debug.LogError("No action source matching the name \"" + displayName + "\"");
+        return null;
+    }
+
+    public virtual void UnSubmitAction(Action action)
+    {
+        // Make sure the index is valid
+        if (action == null) // The index is either too high or too low
+        {
+            Debug.Log("Invalid action for UnSubmitAction() bruv");
             return;
         }
 
         // TODO: Remove submitted actions from the action stack in game.cs
 
-        // Forget all submitted actions
-        submittedActions.Clear();
-        hasSubmittedAction = false;
-
-        // Reset planned movement
-        ResetPlannedMovement();
+        // Forget submitted action
+        submittedActions.Remove(action);
 
         // Tell all allies to update possible targets
         // TODO: Possibly make this just for movement actions since thats what this is here for
-        teamManager.UpdatePossibleTargets();
+        if (action.ActionType == actionType.move)
+        {
+            ResetPlannedMovement();
+            UpdatePlannedMovement();
 
-        DiscardAction();
+            teamManager.UpdatePossibleTargets();
+        }
+
+        action.Discard();
+    }
+    public virtual void UnSubmitAllActions()
+    {
+        // Unsubmit the most recent action until there are none
+        while (submittedActions.Count > 0)
+        {
+            UnSubmitAction(submittedActions[0]);
+        }
     }
     public virtual void DiscardAction()
     {
@@ -517,6 +834,129 @@ public class Creature : MonoBehaviour
     }
     public override string ToString()
     {
-        return ("Creature," + displayName);
+        return displayName;
+    }
+    // Change to this stat this turn considering possible buffs applied this turn by allies (mainly used for movement and speed buffs)
+    public virtual int ExpectedStatIncrease(buffableCreatureStats stat)
+    {
+        int totalIncrease = 0; // Tick this timer up as you find buff actions that would increase this
+
+        // Loop through each creature on this creature's team (including itself)
+        foreach (Creature ally in teamManager.TeamMembers)
+        {
+            // Loop through each submitted action of that creature (if any)
+            foreach (Action action in ally.submittedActions)
+            {
+                // Check if that action is a buff
+                if (action.ActionType == actionType.buff) // The action is a buff
+                {
+                    // Check if the action targets this creature
+                    if (action.CreatureTargets.Contains(this)) // This action targets this creature
+                    {
+                        // Loop through each stat buff and see if its valid
+                        foreach (statBuff buff in action.Buffs)
+                        {
+                            // Test if it of the correct stat
+                            if (buff.stat == stat) // It does buff the correct stat
+                            {
+                                // Increase the counter
+                                totalIncrease += buff.ammount;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return the total increased stat (to be added to the correct stat in the function where this is called)
+        // Not automatically added to the stat and returned here because not all creatures have specialEnergy or maxSpecialEnergy
+        return totalIncrease;
+    }
+    protected virtual void UpdateActiveBuffs()
+    {
+        // Count down buff timers
+        int buffsDeleted = 0; // Used to know how many indexes to skip to avoid reading null-data
+        for (int i = 0; i < activeBuffs.Count; i++)
+        {
+            // Make sure we're not reading null-data (buffs may have gotten deleted mid-loop)
+            if (i >= activeBuffs.Count - buffsDeleted) // This is now null-data
+            {
+                // Break out of the function
+                return;
+            }
+            // Tick down the timer
+            activeBuffs[i].EndTurn();
+
+            // Remove it if its done
+            if (!activeBuffs[i].buffActive) // The buff is done
+            {
+                // Remove the buff from the list
+                activeBuffs.RemoveAt(i);
+
+                // Send the loop back to the same index, which now has a new buff
+                i -= 1;
+                buffsDeleted += 1;
+            }
+        }
+    }
+    public Tile PlannedMovementAtStep(int stepIndex, phase phase)
+    {
+        // Determine which index of plannedMovement for each player this should look at
+        int phaseIndex;
+        if (phase == phase.Move) // Move phase (index 1)
+        {
+            phaseIndex = 1;
+        }
+        else // Prep phase (index 0)
+        {
+            phaseIndex = 0;
+        }
+
+        // Get their planned movement at this step
+        // Test if their planned movement reaches this step
+        if (plannedMovement[phaseIndex].Count - 1 >= stepIndex) // Their planned movement has data for this step
+        {
+            // Record their movement for this step
+            return plannedMovement[phaseIndex][stepIndex];
+        }
+        else // Their planned movement ends before this step
+        {
+            // Use their last step (since that will be the tile they end on and will be there by this step)
+            return plannedMovement[phaseIndex][plannedMovement[phaseIndex].Count - 1];
+        }
+    }
+
+    public bool Push(Tile origin, float distance)
+    {
+        // TODO: Go through each step of the push to stop it from going through walls
+        // TODO: Maybe deal with colliding with other pushed creatures? (Hopefully that never becomes relevant)
+
+        // Save the direction of the push
+        Vector2 pushDirection = (space.TilePosition - origin.TilePosition).normalized;
+        Tile targetTile = levelSpawner.TargetTile(space.TilePosition + pushDirection * distance);
+
+        if (targetTile.IsOpen) // This tile is open
+        {
+            // Sucsessfully be pushed to this tile
+            // TODO: Have an animation for this
+            Debug.Log(displayName + " was pushed 1 tile from " + space + " to " + targetTile);
+            ChangeSpaceTo(targetTile);
+            ShowFloatingText("Pushed!");
+            return true;
+        }
+        else // The tile is obscured
+        {
+            // Womp womp
+            return false;
+        }
+    }
+
+    public virtual void RemoveActionSource(ActionSource actionSource)
+    {
+        // Remove it from the list
+        activeActionSources.Remove(actionSource);
+
+        // TODO: Put it in a seperate list of thrown weapons or something, rather than deleting it
+        Destroy(actionSource.gameObject);
     }
 }

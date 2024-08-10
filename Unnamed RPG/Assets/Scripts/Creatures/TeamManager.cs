@@ -10,17 +10,21 @@ public class TeamManager
 
     // Stored variables
     protected List<Creature> teamMembers = new List<Creature> { };
-    protected string teamName;
-
-    // Cached variables
-    protected List<Tile> plannedMovementAtThisStep = new List<Tile> { }; // Chached for use in PlannedMovementAtStep() without needing to create a new list each time
-    protected List<Creature> enemies = new List<Creature> { };
-
     public List<Creature> TeamMembers
     {
         get { return teamMembers; }
     }
 
+    protected string teamName;
+    protected bool teamReady = false;
+    public bool TeamReady
+    {
+        get { return teamReady; }
+    }
+
+    // Cached variables
+    protected List<Tile> plannedMovementAtThisStep = new List<Tile> { }; // Chached for use in PlannedMovementAtStep() without needing to create a new list each time
+    protected List<Creature> enemies = new List<Creature> { };
     public List<Creature> Enemies
     {
         get
@@ -46,6 +50,7 @@ public class TeamManager
         }
     }
 
+
     public TeamManager(string teamName)
     {
         this.teamName = teamName;
@@ -63,19 +68,13 @@ public class TeamManager
         teamMember.TeamManager = this;
     }
 
-    public List<Tile> PlannedMovementAtStep(int step, Game.phase phase, Creature ignoreThisCreature)
+    public virtual void RemoveTeamMember(Creature teamMember)
     {
-        // Determine which index of plannedMovement for each player this should look at
-        int index;
-        if (phase == Game.phase.move) // Move phase (index 1)
-        {
-            index = 1;
-        }
-        else // Prep phase (index 0)
-        {
-            index = 0;
-        }
+        teamMembers.Remove(teamMember);
+    }
 
+    public List<Tile> PlannedMovementAtStep(int stepIndex, phase phase, Creature ignoreThisCreature)
+    {
         // Get an empty list
         plannedMovementAtThisStep.Clear();
 
@@ -94,7 +93,9 @@ public class TeamManager
                 }
             }
 
-            // Get their planned movement at this step
+            plannedMovementAtThisStep.Add(teamMember.PlannedMovementAtStep(stepIndex, phase));
+
+/*            // Get their planned movement at this step
             // Test if their planned movement reaches this step
             if (teamMember.PlannedMovement[index].Count - 1 >= step) // Their planned movement has data for this step
             {
@@ -105,13 +106,13 @@ public class TeamManager
             {
                 // Use their last step (since that will be the tile they end on and will be there by this step)
                 plannedMovementAtThisStep.Add(teamMember.PlannedMovement[index][teamMember.PlannedMovement[index].Count - 1]);
-            }
+            }*/
         }
 
         return plannedMovementAtThisStep;
     }
 
-    public List<Tile> PlannedMovementAtStep(int step, Game.phase phase)
+    public List<Tile> PlannedMovementAtStep(int step, phase phase)
     {
         return PlannedMovementAtStep(step, phase, null);
     }
@@ -125,10 +126,24 @@ public class TeamManager
         }
     }
 
-    // TODO: Delete this (this is for debugging)
-    private void Update()
+    public void ReadyUp()
     {
-        return;
-        levelSpawner.HighlightTiles(plannedMovementAtThisStep);
+        // Mark this team as ready
+        teamReady = true;
+
+        // Tell the game this team is ready
+        game.TeamReady();
+    }
+
+    public void EndTurn()
+    {
+        // Reset teamReady
+        teamReady = false;
+
+        // Tell each team member to call EndTurn()
+        foreach (Creature teamMember in teamMembers)
+        {
+            teamMember.EndTurn();
+        }
     }
 }

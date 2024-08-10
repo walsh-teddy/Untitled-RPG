@@ -39,25 +39,21 @@ public class RandomEnemy : Enemy
 
         // Test if that action can be done
         if (randomAction.Playable && // The action is playable
-            (randomAction.PossibleTargets.Count > 0 || !randomAction.NeedsTarget) // The action has possible targets or doesn't need them
+            (randomAction.PossibleTargets.Count > 0) // The action has possible targets or doesn't need them
             ) // The action is available!
         {
-            // Select a target (if it needs one)
-            if (randomAction.NeedsTarget) // It needs a target
+            // If it is a move, consider possibleSpaces as well
+            if (randomAction.ActionType != actionType.move) // It is not a move
             {
-                // If it is a move, consider possibleSpaces as well
-                if (!randomAction.IsMove) // It is not a move
-                {
-                    // Only look at possible targets
-                    randomTarget = randomAction.PossibleTargets[Random.Range(0, randomAction.PossibleTargets.Count - 1)];
-                    randomAction.SetTarget(randomTarget);
-                }
-                else // It is a move
-                {
-                    // Look at possible spaces rather than possible targets
-                    randomTarget = randomAction.PossibleSpaces[Random.Range(0, randomAction.PossibleSpaces.Count - 1)];
-                    randomAction.SetTarget(randomTarget);
-                }
+                // Only look at possible targets
+                randomTarget = randomAction.PossibleTargets[Random.Range(0, randomAction.PossibleTargets.Count - 1)];
+                randomAction.SetTarget(randomTarget);
+            }
+            else // It is a move
+            {
+                // Look at possible spaces rather than possible targets
+                randomTarget = randomAction.PossibleSpaces[Random.Range(0, randomAction.PossibleSpaces.Count - 1)];
+                randomAction.SetTarget(randomTarget);
             }
 
             // Submit the action

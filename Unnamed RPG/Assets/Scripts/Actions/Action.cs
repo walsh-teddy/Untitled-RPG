@@ -1,41 +1,59 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityEngine.UI;
+using TMPro;
 
 // TODO: Might need to move every type of action to this one class
 public class Action
 {
-    // -=-=-=-= GENERAL VARIABLES (AND PROPERTIES) =-=-=-=-
-
-    protected Game.phase phase;
+    // General
+    protected phase phase;
     protected string displayName;
+    protected ActionSource source;
+    protected actionType actionType; // Is the action an attack, move, aoe, or buff
+
+    // Costs
     protected int cooldown;
-    protected int turnsSpentCasting;
     protected bool gainedCooldownThisTurn;
     protected int rechargeCost;
     protected int cooldownCost;
     protected int energyCost;
     protected int castTimeCost;
     protected bool isMinorAction;
-    protected ActionSource source;
-    protected bool isAttack; // The action is an attack
-    protected bool isMove; // The action is a move
-    protected int id; // The index in source.ActionList that this appears at (unused rn)
+
+    // Targeting
     protected List<Tile> targets = new List<Tile> { };
     protected List<Tile> possibleSpaces = new List<Tile> { }; // Every possible space within range of this action (light highlight)
     protected List<Tile> possibleTargets = new List<Tile> { }; // Every possible space that could be targeted with this action
-    protected bool canSelectSpaces = false; // Hovering over a possible space instead of a possible target should still heavy highlight it (mainly used for moves)
-    protected bool needsTarget = true; // False for things like Recover, which don't target anything
-    public enum attackType { attack, move, buff, summon}; // TODO: This will probably become relevant at some point
-                                                          // UI stuff
+    protected bool ignoreLineOfSight;
+    protected Tile origin; // Where the action originated from (usually just the attacker, but some AOEs are different)
+    protected float range; // How far this action can reach out (if 100, then range is infinite)
+    protected List<Creature> creatureTargets = new List<Creature> { }; // Records which creatures are in the target tiles when targets selected (incase they move to a different tile before the action resolves)
+    protected List<Creature> missedCreatureTargets = new List<Creature> { };
+    protected bool targetsLocked = false; // If true, SetTarget() should be canceled
+    protected targetTypes targetType = targetTypes.none; // How it should display targets when this action is selected
+
+    // Animation
+    protected string animationTrigger;
+
+    // UI
     uiActionButton uiButton; // Empty object thats turned on and off to turn the buttons for the action source buttons on and off (off when an action is selected)
+    protected bool hidden = false; // Will the button be hidden in the UI (shown
+    protected bool displayCastingTime = false;
+    protected GameObject uiRoot;
+    protected Sprite buttonImage;
+
+    // Casting
+    protected CastAction castAction; // Only not-null if castTimeCost > 0 (the action that is called every turn it is cast instead of the actual action)
+
     public uiActionButton UIButton
     {
         get { return uiButton; }
         set { uiButton = value; }
     }
-    public Game.phase Phase
+    public phase Phase
     {
         get { return phase; }
     }
@@ -52,31 +70,37 @@ public class Action
             cooldown = value;
         }
     }
-
+    public float Range
+    {
+        get { return range; }
+    }
+    public List<Creature> CreatureTargets
+    {
+        get { return creatureTargets; }
+    }
+    public List<Creature> MissedCreatureTargets
+    {
+        get { return missedCreatureTargets; }
+    }
     public virtual ActionSource Source
     {
         get { return source; }
-        set { source = value; }
+        set
+        {
+            source = value;
 
-    }
-    public bool IsAttack
-    {
-        get { return isAttack; }
-    }
-    public bool IsMove
-    {
-        get { return isMove; }
-    }
-    public int ID
-    {
-        get { return id; }
-        set { id = value; }
+            // Update the animationTrigger to include how the weapon is being held
+            if (source.HeldHand != hand.None)
+            {
+                animationTrigger = source.AnimationType + animationTrigger + source.HeldHand;
+            }
+        }
+
     }
     public List<Tile> Targets
     {
         get { return targets; }
     }
-
     public List<Tile> PossibleSpaces
     {
         get { return possibleSpaces; }
@@ -88,10 +112,6 @@ public class Action
     public bool HasTarget
     {
         get { return (targets.Count != 0); }
-    }
-    public bool CanSelectSpaces
-    {
-        get { return canSelectSpaces; }
     }
     public bool Playable
     {
@@ -117,16 +137,24 @@ public class Action
                 playable = false;
             }
 
-            // Test if the owner has another action submitted and neither this nor that is a minor action
-            else if (source.Owner.SubmittedActions.Count == 1) // there is another action submitted
+            // Loop through each action already submitted by this creature
+            foreach (Action action in source.Owner.SubmittedActions)
             {
-                if (!source.Owner.SubmittedActions[0].isMinorAction && !isMinorAction) // Neither that nor this action are minor actions
+                // Test if theres a non-minor action submitted
+                if (!action.isMinorAction && !isMinorAction) // Neither the submitted action or this one are minor actions
+                {
+                    playable = false;
+                }
+
+                // Test if this action is in the same phase
+                if (action.phase == phase) // they are both in the same phase
                 {
                     playable = false;
                 }
             }
 
-            else if (source.Owner.SubmittedActions.Count == 2) // The owner has already submitted 2 actions
+            // Test if the button should be shown (mainly here so the AI can't access it)
+            if (hidden)
             {
                 playable = false;
             }
@@ -134,201 +162,92 @@ public class Action
             return playable;
         }
     }
-    public bool NeedsTarget
+    public actionType ActionType
     {
-        get { return needsTarget; }
-    }
-
-
-    // -=-=-=-= ATTACK SPECIFIC VARIABLES (AND PROPERTIES) =-=-=-=-
-
-    protected int hitBonusBase;
-    // If strength is here once. The attack gets +str to hit. If its there twice, it gets +str x2 to hit.
-    // If str and dex are both there, it gets +str +dex to hit
-    protected List<Game.stats> hitBonusScale;
-    protected int critBonusBase;
-    protected List<Game.stats> critBonusScale;
-    protected int damage; // If damage is 0, then it cannot do damage or crit
-    protected float range; // If 0, then it has infinite range (like a shield block)
-    protected float closeRange; // Range that is too close to hit. Only used for ranged attacks
-    protected bool isRanged; // True if a ranged attack. False if a melee attack
-    protected Tile origin; // Where the attack originated from (usually just the attacker, but some AOEs are different)
-    protected bool originatesFromAttacker = true; // Only false if origin isn't where the attacker stands
-    // TODO: Maybe target should be a tile in the case of AOEs?
-    // TODO: Allow for AOE attacks like fireballs or shield blocks
-    public enum attackEffects
-    {
-        bonusToEnemyShieldRecharge, // Increases the recharge of shields enemies are holding by 1 when they clash. Used by axes
-        canBlockAOE, // Can block AOEs. Used by shields
-        throwWeapon, // Throws the weapon and leaves the owner's inventory. Used by daggers and hatchets and spears
-        targetThreeCreatures, // target up to 3 creatures within range. Used by the cleave attack for heavy weapons
-        knockBack, // Can knock enemies back 1 tile from you if they fail a strength check. Used by blunt weapons
-        requiresAmmo, // Used for ranged weapon attacks that need to be loaded first. Also it consumes 1 ammo
-        // TODO: Maybe extra energy spent when the enemy contests it (like in blocks)
-    }
-    protected List<attackEffects> extraEffects;
-    protected List<Creature> creatureTargets = new List<Creature> { };
-    protected int rolledAttack; // What the attack rolled out of 20 to hit this round
-
-    public int HitBonus
-    {
-        get
-        {
-            // Hit bonus = hitBonusBase + hitBonusScale x the owner's stats
-            // If a creature with 2 strength uses an attack thats +3 + str to hit, then they have +5
-            int hitBonus = hitBonusBase;
-
-            // Potentually multiple scales (some attacks have +base +str x2 to hit and some have +base +str +dex to hit
-            foreach (Game.stats stat in hitBonusScale)
-            {
-                switch (stat)
-                {
-                    case Game.stats.strength:
-                        hitBonus += source.Owner.Str;
-                        break;
-                    case Game.stats.dexterity:
-                        hitBonus += source.Owner.Dex;
-                        break;
-                    case Game.stats.intellect:
-                        hitBonus += source.Owner.Int;
-                        break;
-                }
-            }
-
-            return hitBonus;
-        }
-    }
-    public int CritBonus
-    {
-        get
-        {
-            // Crit bonus = critBonusBase + cirtBonusScale x the owner's relevant stat
-            // If a creature with 2 dexterity uses an attack thats +3 +dex to crit, then they have +5
-            int critBonus = critBonusBase;
-
-            // Potentually multiple scales (some attacks have +base +str x2 to crit and some have +base +str +dex to crit
-            foreach (Game.stats stat in critBonusScale)
-            {
-                switch (stat)
-                {
-                    case Game.stats.strength:
-                        critBonus += source.Owner.Str;
-                        break;
-                    case Game.stats.dexterity:
-                        critBonus += source.Owner.Dex;
-                        break;
-                    case Game.stats.intellect:
-                        critBonus += source.Owner.Int;
-                        break;
-                }
-            }
-
-            return critBonus;
-        }
-    }
-    public int Damage
-    {
-        get { return damage; }
-    }
-    public float Range
-    {
-        get { return range; }
-    }
-    public bool IsRanged
-    {
-        get { return isRanged; }
-    }
-    public float CloseRange
-    {
-        get { return closeRange; }
-    }
-    public List<attackEffects> ExtraEffects
-    {
-        get { return extraEffects; }
-    }
-    public List<Creature> CreatureTargets
-    {
-        get { return creatureTargets; }
+        get { return actionType; }
     }
     public Tile Origin
     {
         get { return origin; }
     }
-    public bool OriginatesFromAttacker
+    public bool Hidden
     {
-        get { return originatesFromAttacker; }
+        get { return hidden; }
+        set { hidden = value; }
     }
-    public int RolledAttack
+    public bool DisplayCastingTime
     {
-        get { return rolledAttack; }
+        get { return displayCastingTime; }
     }
-    public int TotalHitNumber
+    public bool TargetsLocked
     {
-        get { return rolledAttack + HitBonus; }
+        get { return targetsLocked; }
+        set { targetsLocked = value; }
     }
-    public bool Critted
+    public targetTypes TargetType 
     {
-        // If crit bonus = 0 and they rolled a 20, they crit. If it is +1 and they rolled a 19 or 20, they crit
-        get { return rolledAttack >= 20 - CritBonus; }
+        get { return targetType; }
     }
-
-
-    // AOE VARIABLES (mostly for attacks but maybe other actions as well)
-    public enum aoeTypes { none, circle, cone, line }
-    protected aoeTypes aoeType;
-    protected float aoeReach; // The radius of a circle and the width of a line
-    protected float aoeAngle; // How wide a cone will be (only used by cone)
-    protected float aoeHeight; // How high a circle will explode from the ground (only used by circles)
-    protected Tile aoeTargetTile; // The center of a circle, or the target point of a line or cone
-    protected List<Tile> aoeTilesWithCreature = new List<Tile> { };
-    protected bool isAOE;
-
-    public bool IsAOE
+    public CastAction CastAction
     {
-        get { return isAOE; }
+        get { return castAction; }
+        set { castAction = value; }
     }
-    public List<Tile> AOETilesWithCreatures
+    public GameObject UIRoot
     {
-        get { return aoeTilesWithCreature; }
+        get { return uiRoot; }
+        set { uiRoot = value; }
+    }
+    public Sprite ButtonImage
+    {
+        get { return buttonImage; }
     }
 
-    // -=-=-=-= MOVE SPECIFIC VARIABLES (AND PROPERTIES) =-=-=-=-
-    //protected bool moveInterrupted = false; // Set to true if the movement is interrupted and they should not move anymore this turn
-    protected bool moveFinished = false; // Set to true when this has moved its final step this turn
-    protected Creature moveContestion; // Which creature this move would bump into this step. Assigned by game.cs
-    protected int currentTileIndex = 1; // Used when performing the move animations. Always starts on 1 because index 0 is the starting tile (and we don't move to that)
-/*    public bool MoveInterrupted
+
+    // -=-=-=-= OVERRIDEN PROPERTIES =-=-=-=-
+    public virtual List<Tile> AOETilesWithCreatures
     {
-        get { return moveInterrupted; }
-        set { moveInterrupted = value; }
-    }*/
-    public Creature MoveContestion
-    {
-        get { return moveContestion; }
-        set { moveContestion = value; }
+        // Overriden in AOEAttack.cs
+        get
+        {
+            Debug.LogError("AOETilesWithCreatures.get called in a non-AOE action");
+            return null;
+        }
     }
-    public int CurrentTileIndex
+    public virtual List<statBuff> Buffs
     {
-        get { return currentTileIndex; }
-    }
-    public bool MoveFinished
-    {
-        get { return moveFinished; }
+        get { return null; }
     }
 
-    // Default Constructor (should only be used by child classes)
-    public Action(string displayName, int rechargeCost, int cooldownCost, int energyCost, int castTimeCost, bool isMinorAction, Game.phase phase)
+    // Constructor
+
+    public Action(ActionData data)
     {
-        this.displayName = displayName;
-        this.rechargeCost = rechargeCost;
-        this.cooldownCost = cooldownCost;
-        this.energyCost = energyCost;
-        this.castTimeCost = castTimeCost;
-        this.phase = phase;
-        this.isMinorAction = isMinorAction;
-        isAttack = false;
-        isMove = false;
-        isAOE = false;
+        // Extract data from the data object
+        displayName = data.displayName;
+        rechargeCost = data.rechargeCost;
+        cooldownCost = data.cooldownCost;
+        energyCost = data.energyCost;
+        castTimeCost = data.castTimeCost;
+        phase = data.phase;
+        isMinorAction = data.isMinorAction;
+        animationTrigger = data.animationTrigger;
+        buttonImage = data.buttonImage;
+
+        // Default values that will be overwritten by child constructors
+        actionType = actionType.none;
+    }
+
+    public virtual void CreateUI()
+    {
+        // Create a root element childed to the source ui root (this is used for any extra effects, like move.Chasing)
+        uiRoot = GameObject.Instantiate(source.UIManagerRef.UIRootCenterPrefab, source.UIManagerRef.UIRootCenterOrigin);
+        uiRoot.SetActive(false);
+        uiRoot.name = displayName + " UIRoot";
+
+        // Create a button for the action (childed to the action source root)
+        uiButton =  GameObject.Instantiate(source.UIManagerRef.ActionButtonPrefab, source.UIRoot.transform).GetComponent<uiActionButton>();
+        uiButton.Create(this);
     }
 
     // In adition to whatever the specific action does, cost energy and stuff
@@ -343,11 +262,18 @@ public class Action
 
         // Cost the owner energy
         source.Owner.Energy -= energyCost;
+
+        // Reset the casting time if it has a casting cost
+        if (castTimeCost > 0)
+        {
+            castAction.ResetCasting();
+        }
     }
 
     public virtual void PlayAnimation()
     {
-        // Do nothing by default
+        //Debug.Log(displayName + " playing animation: \"" + animationTrigger + "\"");
+        source.Owner.AnimationController.SetTrigger(animationTrigger);
     }
 
     public virtual void EndTurn()
@@ -362,11 +288,9 @@ public class Action
             cooldown -= 1;
         }
 
-        // Update the origin
-        if (originatesFromAttacker)
-        {
-            origin = source.Owner.Space;
-        }
+        // Reset the origin
+        // TODO: This was originally only called if originatesFromAttacker was true, but now thats only in attack.cs so this may cause issues
+        origin = source.Owner.Space;
 
         // Clear targets from this round
         Discard();
@@ -386,20 +310,31 @@ public class Action
     // Update the list of possible spaces and possible target lists
     public virtual void UpdatePossibleTargets()
     {
+        // Do nothing
+    }
+
+    // Initialize nescesary variables for the action to look at possible targets
+    public virtual void SetUpVariables()
+    {
         // If this is the first time this has been called, set the origin to the player's space
         if (origin == null)
         {
             origin = source.Owner.Space;
-            aoeTargetTile = origin;
         }
     }
 
     // Discard any target data that was stored
     public virtual void Discard()
     {
+        // Do nothing if targets are locked
+        if (targetsLocked)
+        {
+            return;
+        }
+
         targets.Clear();
         creatureTargets.Clear();
-        aoeTilesWithCreature.Clear();
+        missedCreatureTargets.Clear();
     }
 
     // Called by game.cs before attacks are made
@@ -411,14 +346,19 @@ public class Action
 
         // Clear targets
         targets.Clear();
+        missedCreatureTargets.Clear();
 
         // Check each creature target to see if they are still in range
         foreach (Creature creature in creatureTargets)
         {
             // Test if the creature is still in range
-            if (possibleTargets.Contains(creature.Space))
+            if (possibleTargets.Contains(creature.Space)) // the target is still in range
             {
                 targets.Add(creature.Space);
+            }
+            else // The target is no longer hittable
+            {
+                missedCreatureTargets.Add(creature);
             }
         }
 
@@ -429,36 +369,78 @@ public class Action
     // Called by game.cs to have the attack roll to hit for this round
     public virtual void RollToHit()
     {
-        rolledAttack = Random.Range(1, 21);
+        // Overriden by attack.cs
+        Debug.LogError("RollToHit called by non-attack action");
     }
 
     public virtual string FormatCostText()
     {
         // Add the header
         string text = "";
+        bool firstLine = true; // This is likely not nescesary since the energy cost is always printed, but its more robust to changes like this
 
         // Add the costs if there are them
         if (castTimeCost > 0) // There is a cast time
         {
-            text += "\n" + castTimeCost + " turn cast time";
+            // Indent if its not the first line
+            if (!firstLine) 
+            {
+                text += "\n";
+            }
+            firstLine = false;
+
+            // Print cast time cost
+            text += castTimeCost + " turn cast time";
         }
+
         // Always list the energy cost
-        text += "\nCosts " + energyCost + " energy";
-/*        if (energyCost > 0) // there is an energy cost
+        if (true) // (energyCost > 0) // There is an energy cost
         {
-            text += "\nCosts " + energyCost + " energy";
-        }*/
+            // Indent if its not the first line
+            if (!firstLine)
+            {
+                text += "\n";
+            }
+            firstLine = false;
+
+            // Print energy cost
+            text += "Costs " + energyCost + " energy";
+        }
+
         if (cooldownCost > 0) // There is a cooldown cost
         {
-            text += "\n" + cooldownCost + " turn cooldown";
+            // Indent if its not the first line
+            if (!firstLine)
+            {
+                text += "\n";
+            }
+            firstLine = false;
+
+            // Print cooldown cost
+            text += cooldownCost + " turn cooldown";
         }
         if (rechargeCost > 0) // There is a recharge cost
         {
-            text += "\n" + rechargeCost + " turn recharge";
+            // Indent if its not the first line
+            if (!firstLine)
+            {
+                text += "\n";
+            }
+            firstLine = false;
+
+            // Print recharge cost
+            text += rechargeCost + " turn recharge";
         }
         if (isMinorAction) // It is a minor action
         {
-            text += "\nMinor action";
+            // Indent if its not the first line
+            if (!firstLine)
+            {
+                text += "\n";
+            }
+            firstLine = false;
+
+            text += "Minor action";
         }
 
         return text;
@@ -524,35 +506,62 @@ public class Action
             }
 
             text += "Insufficient energy";
+
+            // Mark that a line has been printed
+            newLine = true;
+        }
+
+        // Non-minor action
+        bool minorActionTextPrinted = false;
+        bool samePhaseTextPrinted = false;
+        foreach (Action action in source.Owner.SubmittedActions)
+        {
+            // Test if theres a non-minor action submitted
+            if (!action.isMinorAction && !isMinorAction) // Neither the submitted action or this one are minor actions
+            {
+                
+                if (!minorActionTextPrinted) // This text has already been printed for a different conflicting sumbitted action (this is incredibly unlikely)
+                {
+                    if (newLine) // This is not the first line printed
+                    {
+                        text += "\n";
+                    }
+                    text += "Already submitted a non-minor action";
+
+                    // Mark that a line has been printed
+                    newLine = true;
+                    minorActionTextPrinted = true;
+                }
+            }
+
+            // Test if this action is in the same phase
+            if (action.phase == phase) // they are both in the same phase
+            {
+                if (!samePhaseTextPrinted) // This text has already been printed for a different conflicting sumbitted action (this is incredibly unlikely)
+                {
+                    if (newLine)
+                    {
+                        text += "\n";
+                    }
+                    text += "Already submitted an action for this phase";
+
+                    // Mark that a line has been printed
+                    newLine = true;
+                    samePhaseTextPrinted = true;
+                }
+            }
         }
 
         return text;
+    }
+    public virtual string FormatCastingTimeText()
+    {
+        return "Ready to cast!";
     }
 
     // Change the button if the action is on cooldown
     public virtual void UpdateUI()
     {
         uiButton.UpdateUI();
-    }
-
-    // Just here for Move.cs
-    public virtual void CheckCollision(List<Creature> allCreatures)
-    {
-
-    }
-    // Also here for move.cs
-    public virtual Tile StepAtIndex(int index)
-    {
-        // Test if the index is within range
-        if (index <= targets.Count - 1) // The index is within range
-        {
-            // Return the chosen index
-            return targets[index];
-        }
-        else // The index is out of range
-        {
-            // Return the last index
-            return targets[targets.Count - 1];
-        }
     }
 }

@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1702456656628872110
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1229462340431494678}
+  - component: {fileID: 4912980251459489604}
+  m_Layer: 0
+  m_Name: testWeapon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1229462340431494678
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702456656628872110}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4912980251459489604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702456656628872110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d28680d3ceb7ad340a990f7173c75b4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  displayName: Test
+  actionDataList:
+  - {fileID: 11400000, guid: 5511cffa2911d7442b1c46de9b6cc658, type: 2}
+  - {fileID: 11400000, guid: bee8ccceb350421498b606e6e3d1fd5a, type: 2}
+  - {fileID: 11400000, guid: ad573111040b8bf468c31b51e98d4ab6, type: 2}
+  - {fileID: 11400000, guid: 2df88c8cf98c1bb45884a68796aeee36, type: 2}
+  - {fileID: 11400000, guid: 705a8fa94c31e7242acc9054f5cd3334, type: 2}
+  - {fileID: 11400000, guid: 21b84357530458243ae4b0969c930642, type: 2}
+  animationType: 4
+  handCount: 0
+  weaponType: 6
+  slots: 0
+  versatileForm: {fileID: 0}
+  magicLevel: 0
+  leftHandRest: {fileID: 0}

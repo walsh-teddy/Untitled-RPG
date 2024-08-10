@@ -20,23 +20,16 @@ public class Enemy : Creature
     {
         base.Create(space);
 
-        // Give them equipment
-        activeActionSources.Add(new BastardSword1H(this));
-
         // Save their prefered agressive actions
-        agressiveActions.Add(activeActionSources[1].ActionList[0]); // Bastard sword slash
-        agressiveActions.Add(activeActionSources[1].ActionList[1]); // Bastard sword stab
-        agressiveActions.Add(activeActionSources[0].ActionList[0]); // Self recover
-        agressiveActions.Add(activeActionSources[0].ActionList[3]); // Self punch
+        agressiveActions.Add(GetActionSourceByName("Longsword (2 handed)").GetActionbyName("Slash"));
+        agressiveActions.Add(GetActionSourceByName("Longsword (2 handed)").GetActionbyName("Stab"));
 
         // Save their prefered defensive actions (unused as of now)
-        defensiveActions.Add(activeActionSources[0].ActionList[1]); // Self recover
-        defensiveActions.Add(activeActionSources[1].ActionList[2]); // Bastard sword block
-        defensiveActions.Add(activeActionSources[1].ActionList[1]); // Bastard Sword block
+        defensiveActions.Add(GetActionSourceByName("Longsword (2 handed)").GetActionbyName("Block"));
 
         // Save their prefered reposition actions
-        repositionActions.Add(activeActionSources[0].ActionList[2]); // Self Dash
-        repositionActions.Add(activeActionSources[0].ActionList[1]); // Self Move
+        repositionActions.Add(GetActionSourceByName("Self").GetActionbyName("Dash"));
+        repositionActions.Add(GetActionSourceByName("Self").GetActionbyName("Move"));
     }
 
     public override void AI()
@@ -59,6 +52,9 @@ public class Enemy : Creature
                     // Submit this action
                     SubmitAction(action);
 
+                    // TODO: Instead have each enemy mark when they are ready and have the team manager ReadyUp once all AI are ready
+                    teamManager.ReadyUp();
+
                     // Break out of the function
                     return;
                 }
@@ -69,14 +65,21 @@ public class Enemy : Creature
             // Move towards the nearest enemy
             foreach (Action action in repositionActions)
             {
+                // Cast to a move
+                Move move = (Move)action;
+
                 // Make sure the action is playable (Dash costs energy)
-                if (action.Playable)
+                if (move.Playable)
                 {
                     // Set the target
-                    action.SetTarget(levelSpawner.NearestCreature(teamManager.Enemies, this).Space);
+                    move.SetTarget(levelSpawner.NearestCreature(teamManager.Enemies, this).Space);
 
                     // Submit the action
-                    SubmitAction(action);
+                    move.Chasing = true;
+                    SubmitAction(move);
+
+                    // TODO: Instead have each enemy mark when they are ready and have the team manager ReadyUp once all AI are ready
+                    teamManager.ReadyUp();
 
                     // Break out of the function
                     return;
@@ -124,4 +127,10 @@ public class Enemy : Creature
 
         return currentTarget.Space;
     }
+    public override void SubmitAction(Action action)
+    {
+        //Debug.Log(displayName + " submitted " + action.DisplayName);
+        base.SubmitAction(action);
+    }
+
 }
