@@ -182,7 +182,7 @@ public class BuffAction : Action
         }
     }
 
-    public override string FormatDescription(bool playerExists)
+    public override string FormatDescription()
     {
         string text = "";
 

@@ -509,8 +509,9 @@ public class Move : Action
         previousMoveToTile = source.Owner.Space;
     }
 
-    public override string FormatDescription(bool playerExists)
+    public override string FormatDescription()
     {
+        bool playerExists = source.Owner != null;
         string text = "";
 
         if (playerExists) // This is being done in a game

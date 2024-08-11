@@ -448,7 +448,7 @@ public class Action
 
     // Called at the end of constructors (not the base constructor though)
     // playerExists = false when in character creation and it should show what stats go into the attack bonuses and stuff
-    public virtual string FormatDescription(bool playerExists)
+    public virtual string FormatDescription()
     {
         return "";
     }

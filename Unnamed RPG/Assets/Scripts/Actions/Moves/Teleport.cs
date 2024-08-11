@@ -64,7 +64,7 @@ public class Teleport : Move
         targets.Add(target);
     }
 
-    public override string FormatDescription(bool playerExists)
+    public override string FormatDescription()
     {
         string text = "";
 

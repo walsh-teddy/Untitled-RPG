@@ -14,14 +14,7 @@ public class uiActionButton : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     [SerializeField] Color innactiveColor;
     [SerializeField] TextMeshProUGUI buttonText;
     [SerializeField] GameObject displayTextBox;
-    [SerializeField] TextMeshProUGUI displayNameText;
-    [SerializeField] TextMeshProUGUI phaseText;
-    [SerializeField] TextMeshProUGUI descriptionText;
-    [SerializeField] TextMeshProUGUI costText;
-    [SerializeField] GameObject innactiveBox;
-    [SerializeField] TextMeshProUGUI innactiveText;
-    [SerializeField] GameObject castingTimeBox;
-    [SerializeField] TextMeshProUGUI castingTimeText;
+    ActionDisplayBox display;
 
     public void Create(Action action)
     {
@@ -45,11 +38,9 @@ public class uiActionButton : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         // Tell the player to select this action every time the button is clicked
         button.onClick.AddListener(ButtonClick);
 
-        // Update the text of the display text box
-        displayNameText.text = action.DisplayName;
-        phaseText.text = (action.Phase + " Phase");
-        descriptionText.text = action.FormatDescription(true);
-        costText.text = action.FormatCostText();
+        // Create the display box
+        display = displayTextBox.GetComponent<ActionDisplayBox>();
+        display.Create(action);
     }
 
     private void ButtonClick()
@@ -86,30 +77,16 @@ public class uiActionButton : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             // Fade out the button
             button.image.color = innactiveColor;
             button.enabled = false;
-
-            // Turn on innactive box in the action description
-            innactiveBox.SetActive(true);
-            innactiveText.text = action.FormatInnactiveText();
-
         }
         else // The action is not on cooldown
         {
             button.image.color = activeColor;
             button.enabled = true;
-            innactiveBox.SetActive(false);
         }
-
-        // Show casting time text if it needs to be cast still
-        if (action.DisplayCastingTime)
-        {
-            castingTimeBox.SetActive(true);
-            castingTimeText.text = action.FormatCastingTimeText();
-        }
-
-        // Owner's stats may change, so update the description box to account for that
-        descriptionText.text = action.FormatDescription(true);
 
         // Turn off the box display by default
         displayTextBox.SetActive(false);
+
+        display.UpdateUI();
     }
 }

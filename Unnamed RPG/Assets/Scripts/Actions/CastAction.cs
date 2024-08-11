@@ -29,9 +29,9 @@ public class CastAction : Action
         get { return otherAction.AOETilesWithCreatures; }
     }
 
-    public override string FormatDescription(bool playerExists)
+    public override string FormatDescription()
     {
-        return otherAction.FormatDescription(playerExists);
+        return otherAction.FormatDescription();
     }
 
     public override string FormatCastingTimeText()

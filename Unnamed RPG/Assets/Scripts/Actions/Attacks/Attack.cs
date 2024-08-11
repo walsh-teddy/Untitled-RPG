@@ -257,8 +257,9 @@ public class Attack : Action
         }
     }
 
-    public override string FormatDescription(bool playerExists)
+    public override string FormatDescription()
     {
+        bool playerExists = source.Owner != null;
         string text = "";
 
         text += FormatRangeText();
