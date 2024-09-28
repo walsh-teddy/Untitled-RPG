@@ -7,9 +7,10 @@ public enum gameState
     uninteractable, // It is not in a decision phase and the player needs to wait for animatons to happen
     nothingSelected, // Nothing selected
     playerSelected, // Selected a player. Waiting for an action source to be selected
-                    //playerSelectedSubmitted, // Selected a player who has already submitted an action
     playerActionSourceSelectAction, // Selected a player and an action source. Waiting to select an action
     playerActionSelectTarget, // Selecting the next tile for a player to move to
+
+    editingMap, // There are no creatures or fights. The map is being edited
 }
 public enum phase { PredictedDecision, Decision, Prep, Attack, Move }
 public enum weaponType { Medium, Heavy, Light, Shield, Ranged, Magic, None }
@@ -70,4 +71,18 @@ public class CheckedTile
             Mathf.Abs(tile.y - targetTile.y) // Difference in Y from target
         );
     }
+}
+
+public enum BrushType
+{
+    Terraform, // Push tiles up or down
+    Rough, // Make the ground rough terrain
+    Details, // Place creature spawns, and obstacles
+}
+
+public enum DetailType
+{
+    Obstacle,
+    Player,
+    Enemy,
 }

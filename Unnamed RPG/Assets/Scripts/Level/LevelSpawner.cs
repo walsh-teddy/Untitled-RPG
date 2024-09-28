@@ -6,15 +6,15 @@ using System.IO;
 public class LevelSpawner : MonoBehaviour
 {
     // Variables
-    int tileWidth = 10;
-    int tileHeight = 10;
+    protected int tileWidth = 10;
+    protected int tileHeight = 10;
     [SerializeField] string mapFile;
     public float tileSize = 1;
-    private int tileLeft, tileRight, tileTop, tileBottom;
-    private float realWidth, realHeight;
-    private float realLeft, realRight, realTop, realBottom;
-    private Tile[,] map;
-    private Game game;
+    protected int tileLeft, tileRight, tileTop, tileBottom;
+    protected float realWidth, realHeight;
+    protected float realLeft, realRight, realTop, realBottom;
+    protected Tile[,] map;
+    protected Game game;
 
     // Used in AOE and range calculations to not check a tile twice per calculation
     struct checkedTiles
@@ -31,36 +31,18 @@ public class LevelSpawner : MonoBehaviour
         }
     }
     List<checkedTiles> tilesBeingChecked = new List<checkedTiles> { };
-    private void OnDrawGizmos()
-    {
-        foreach (checkedTiles checkedTile in tilesBeingChecked)
-        {
-            if (checkedTile.valid)
-            {
-                Gizmos.color = Color.green;
-            }
-            else
-            {
-                Gizmos.color = Color.red;
-            }
-
-            Gizmos.DrawLine(checkedTile.source, checkedTile.target);
-        }
-
-        // Clear out the checked tiles
-        tilesBeingChecked.Clear();
-    }
 
     // Objects to be created or moved around
     [Header("Prefabs")]
-    [SerializeField] private GameObject playerPrefab1;
-    [SerializeField] private GameObject playerPrefab2;
-    [SerializeField] private GameObject playerPrefab3;
-    [SerializeField] private GameObject playerPrefab4;
-    [SerializeField] private GameObject enemyPreafab;
-    [SerializeField] private GameObject randomEnemyPrefab;
-    [SerializeField] private GameObject tilePrefab;
-    [SerializeField] private GameObject rockPreafab;
+    [SerializeField] protected List<GameObject> playerPrefabList; // TODO: Allow for specific player spawns
+    [SerializeField] protected List<GameObject> enemyPrefabList; // TODO: Allow for different enemy types
+    [SerializeField] protected List<GameObject> obstaclePrefabList;
+    [SerializeField] protected List<GameObject> tilePrefabList;
+
+    // Create dictionaries using each of the obstacles and tile prefabs displaNames as the keys (details filled in during Awake())
+    protected Dictionary<string, GameObject> obstaclePrefabDic = new Dictionary<string, GameObject> { };
+    protected Dictionary<string, GameObject> tilePrefabDic = new Dictionary<string, GameObject> { };
+
 
     Creature currentCreature; // Cached here and used when spawing creatures into the level
 
@@ -110,14 +92,30 @@ public class LevelSpawner : MonoBehaviour
     {
         get { return realBottom; }
     }
+    public Tile[,] Map
+    {
+        get { return map; }
+    }
 
     // Start is called before the first frame update
     void Awake()
     {
         game = gameObject.GetComponent<Game>();
+
+        // Create tile type dictionary
+        foreach (GameObject tilePrefab in tilePrefabList)
+        {
+            tilePrefabDic.Add(tilePrefab.GetComponent<Tile>().DisplayName, tilePrefab);
+        }
+
+        // Create the obstacle dictionary
+        foreach (GameObject obstaclePrefab in obstaclePrefabList)
+        {
+            obstaclePrefabDic.Add(obstaclePrefab.GetComponent<Obstacle>().DisplayName, obstaclePrefab);
+        }
     }
 
-    public void SpawnLevel()
+    public virtual void SpawnLevel()
     {
         // Get the file from the main menu if its still there
         if (GameObject.FindGameObjectWithTag("Interscene") != null) // The main menu object was found
@@ -131,7 +129,7 @@ public class LevelSpawner : MonoBehaviour
         }
 
         // Open the file reader
-        FileInfo sourceFile = new FileInfo(mapFile);    
+        FileInfo sourceFile = new FileInfo(mapFile);
         StreamReader reader = sourceFile.OpenText();
 
         // The first line always says the map size in "X/Y" such as "10/10" or "50/20"
@@ -142,18 +140,33 @@ public class LevelSpawner : MonoBehaviour
         map = new Tile[tileWidth, tileHeight];
 
         // Save the map of tile heights
-        string[,] tileMapInFile = new string[tileWidth, tileHeight];
+        string[,] heightMapInFile = new string[tileWidth, tileHeight];
         for (int y = 0; y < tileHeight; y++)
         {
             string[] currentLine = reader.ReadLine().Split(",");
             for (int x = 0; x < tileWidth; x++)
             {
-                tileMapInFile[x, y] = currentLine[x];
+                heightMapInFile[x, y] = currentLine[x];
                 //Debug.Log(string.Format("Saving tileMapInFile ({0},{1}) as {2}", x, y, tileMapInFile[x,y]));
             }
         }
 
-        // There is a blank line between the 2 maps
+        // There is a blank line between the 3 maps
+        reader.ReadLine();
+
+        // Save the map of tile heights
+        string[,] tileTypeMapInFile = new string[tileWidth, tileHeight];
+        for (int y = 0; y < tileHeight; y++)
+        {
+            string[] currentLine = reader.ReadLine().Split(",");
+            for (int x = 0; x < tileWidth; x++)
+            {
+                tileTypeMapInFile[x, y] = currentLine[x];
+                //Debug.Log(string.Format("Saving tileMapInFile ({0},{1}) as {2}", x, y, tileMapInFile[x,y]));
+            }
+        }
+
+        // There is a blank line between the 3 maps
         reader.ReadLine();
 
         // Save the detail map
@@ -170,14 +183,31 @@ public class LevelSpawner : MonoBehaviour
 
         reader.Close();
 
+        int playerIndex = 0;
+
         // Create the actual grid of tiles
         for (int x = 0; x < tileWidth; x++)
         {
             for (int y = 0; y < tileHeight; y++)
             {
                 // Create the tile at the propper height (don't create() until we also make the detail)
-                float currentTileHeight = float.Parse(tileMapInFile[x, y]);
-                map[x, y] = Instantiate(tilePrefab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.identity).GetComponent<Tile>();
+
+                // Store the height value for this tile
+                float currentTileHeight = float.Parse(heightMapInFile[x, y]);
+                string currentTileType = tileTypeMapInFile[x, y];
+
+                // Create the tile of the proper type
+                if (tilePrefabDic.ContainsKey(currentTileType)) // This tile type exists
+                {
+                    // Create the tile out of the correct prefab (based on the tile type) at the height we found
+                    map[x, y] = Instantiate(tilePrefabDic[currentTileType], new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.identity).GetComponent<Tile>();
+                }
+                else // This tile type does not exist
+                {
+                    // Default to the first tile type
+                    Debug.LogError("Unrecognized tile type: \"" + currentTileType + "\"");
+                    map[x, y] = Instantiate(tilePrefabList[0], new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.identity).GetComponent<Tile>();
+                }
 
                 // Determine which direction to randomly rotate this spawned object if there is one
                 float randomRotation;
@@ -190,61 +220,64 @@ public class LevelSpawner : MonoBehaviour
                         map[x, y].Create(x, y, currentTileHeight);
                         break;
 
-                    case "1": // Player 1 spawn TODO: Make player kits be based on their spawn type
+                    case "PlayerSpawn": // Player spawn
                         randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(playerPrefab1, new Vector3 (x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Player>();
+                        currentCreature = Instantiate(playerPrefabList[playerIndex], new Vector3 (x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Player>();
+                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
+                        game.NewCreature(currentCreature);
+
+                        // Incriment the player index
+                        playerIndex += 1;
+                        if (playerIndex >= playerPrefabList.Count) // The index has grown too much
+                        {
+                            // Reset the index
+                            playerIndex = 0;
+                        }
+                        break;
+
+                    case "EnemySpawn": // Enemy Spawn
+                        randomRotation = Random.Range(0, 360);
+                        currentCreature = Instantiate(enemyPrefabList[0], new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Creature>();
                         map[x, y].Create(x, y, currentTileHeight, currentCreature);
                         game.NewCreature(currentCreature);
                         break;
 
-                    case "2": // Player 2 spawn
-                        randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(playerPrefab2, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Player>();
-                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
-                        game.NewCreature(currentCreature);
-                        break;
-
-                    case "3": // Player 3 spawn
-                        randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(playerPrefab3, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Player>();
-                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
-                        game.NewCreature(currentCreature);
-                        break;
-
-                    case "4": // Player 4 spawn
-                        randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(playerPrefab4, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Player>();
-                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
-                        game.NewCreature(currentCreature);
-                        break;
-
-                    case "E": // Enemy Spawn
-                        randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(enemyPreafab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Creature>();
-                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
-                        game.NewCreature(currentCreature);
-                        break;
-
-                    case "A": // Random Enemy Spawn ("R" was taken by rock)
-                        randomRotation = Random.Range(0, 360);
-                        currentCreature = Instantiate(randomEnemyPrefab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Creature>();
-                        map[x, y].Create(x, y, currentTileHeight, currentCreature);
-                        game.NewCreature(currentCreature);
-                        break;
-
-                    case "R": // Rock Obstacle
-                        randomRotation = Random.Range(0, 360);
-                        Obstacle currentRock = Instantiate(rockPreafab, new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Obstacle>();
-                        map[x, y].Create(x, y, currentTileHeight, currentRock);
-                        break;
-
-                    default: // Something went wrong
-                        Debug.LogError(string.Format("Error at ({0},{1})", x, y));
+                    default: // Obstacle
+                        // Check if its a recognized obstacle
+                        string currentDetail = detailMapInFile[x, y];
+                        if (obstaclePrefabDic.ContainsKey(currentDetail)) // It is an obstacle
+                        {
+                            randomRotation = Random.Range(0, 360);
+                            Obstacle currentObstacle = Instantiate(obstaclePrefabDic[currentDetail], new Vector3(x * tileSize, currentTileHeight, y * tileSize), Quaternion.Euler(0, randomRotation, 0)).GetComponent<Obstacle>();
+                            map[x, y].Create(x, y, currentTileHeight, currentObstacle);
+                        }
+                        else // It is unrecognized
+                        {
+                            // Treat it as blank
+                            Debug.LogError("Unrecognized detail: \"" + currentDetail + "\"");
+                            map[x, y].Create(x, y, currentTileHeight);
+                        }
                         break;
                 }
             }
         }
 
+        CalculateMapEdges();
+
+        // Find each tile its connections
+        // TODO: Update each tile's connections list whenever an adjasent tile is created rather than all at the end
+        // TODO: Store map data for different connection distances (rather than them all being 1)
+        foreach (Tile tile in map)
+        {
+            tile.CalculateConnections();
+        }
+
+        // The level is now fully spawned
+        //game.LevelComplete();
+    }
+
+    protected virtual void CalculateMapEdges()
+    {
         // Calculate the edges
         tileLeft = 0;
         tileRight = tileWidth - 1;
@@ -258,17 +291,6 @@ public class LevelSpawner : MonoBehaviour
         realRight = realLeft + realWidth;
         realBottom = tileSize * (-0.5f);
         realTop = realBottom + realHeight;
-
-        // Find each tile its connections
-        // TODO: Update each tile's connections list whenever an adjasent tile is created rather than all at the end
-        // TODO: Store map data for different connection distances (rather than them all being 1)
-        foreach (Tile tile in map)
-        {
-            tile.CalculateConnections();
-        }
-
-        // The level is now fully spawned
-        //game.LevelComplete();
     }
 
     public Tile TargetTile(Vector3 pointerPosition)
@@ -340,11 +362,11 @@ public class LevelSpawner : MonoBehaviour
         return TilePointOnMap(pos.x, pos.y);
     }
 
-    private float GetDistSqr(Tile tile1, Tile tile2)
+    protected float GetDistSqr(Tile tile1, Tile tile2)
     {
         return Mathf.Pow(tile1.x - tile2.x, 2) + Mathf.Pow(tile1.y - tile2.y, 2);
     }
-    private float GetDistSqr(Tile tile1, int x2, int y2)
+    protected float GetDistSqr(Tile tile1, int x2, int y2)
     {
         return Mathf.Pow(tile1.x - x2, 2) + Mathf.Pow(tile1.y - y2, 2);
     }
@@ -391,30 +413,30 @@ public class LevelSpawner : MonoBehaviour
         return WithinDistance(NearestCreature(creatures, origin), origin, distance);
     }
 
-    private bool OnTopSide(Vector2 startPosition, Vector2 endPosition, Vector2 checkPosition)
+    protected bool OnTopSide(Vector2 startPosition, Vector2 endPosition, Vector2 checkPosition)
     {
         return (endPosition.x - startPosition.x) * (checkPosition.y - startPosition.y) - (endPosition.y - startPosition.y) * (checkPosition.x - startPosition.x) > 0 ;
 
     }
-    private bool OnTopSide(Tile startTile, Tile targetTile, int checkX, int checkY)
+    protected bool OnTopSide(Tile startTile, Tile targetTile, int checkX, int checkY)
     {
         return OnTopSide(startTile.TilePosition, targetTile.TilePosition, new Vector2(checkX, checkY));
     }
-    private bool OnTopSide(Tile startTile, Vector2 endPosition, int checkX, int checkY)
+    protected bool OnTopSide(Tile startTile, Vector2 endPosition, int checkX, int checkY)
     {
         return OnTopSide(startTile.TilePosition, endPosition, new Vector2(checkX, checkY));
     }
 
-    private bool OnBottomSide(Vector2 startPosition, Vector2 endPosition, Vector2 checkPosition)
+    protected bool OnBottomSide(Vector2 startPosition, Vector2 endPosition, Vector2 checkPosition)
     {
         return (endPosition.x - startPosition.x) * (checkPosition.y - startPosition.y) - (endPosition.y - startPosition.y) * (checkPosition.x - startPosition.x) < 0;
 
     }
-    private bool OnBottomSide(Tile startTile, Tile targetTile, int checkX, int checkY)
+    protected bool OnBottomSide(Tile startTile, Tile targetTile, int checkX, int checkY)
     {
         return OnBottomSide(startTile.TilePosition, targetTile.TilePosition, new Vector2(checkX, checkY));
     }
-    private bool OnBottomSide(Tile startTile, Vector2 endPosition, int checkX, int checkY)
+    protected bool OnBottomSide(Tile startTile, Vector2 endPosition, int checkX, int checkY)
     {
         return OnBottomSide(startTile.TilePosition, endPosition, new Vector2(checkX, checkY));
     }
@@ -451,7 +473,7 @@ public class LevelSpawner : MonoBehaviour
         return (Mathf.Abs(startTile.x - targetTile.x) <= 1 && Mathf.Abs(startTile.x - targetTile.x) <= 1);
     }
 
-    public List<Tile> TilesInRange(Tile centerTile, float range)
+    public List<Tile> TilesInRange(Tile centerTile, float range, float heightMod)
     {
         List<Tile> tiles = new List<Tile> { };
         float rangeSqr = Mathf.Pow(range, 2);
@@ -464,8 +486,29 @@ public class LevelSpawner : MonoBehaviour
             {
                 // TODO: Round down on distance to not need to add 0.5 to all ranges for attacks.
                 // Might require not using squared distance, which would be very slow
-                if (GetDistSqr(centerTile, x, y) <= rangeSqr)
+
+                // Find the height diff to add to the range
+                // TODO: Maybe use tile.TopHeight instead of tile.Height (though it breaks things rn)
+                float heightDiff = centerTile.Height - Map[x, y].Height;
+
+                float tempRangeSqr = 0;
+
+                // Only calculate a new range squared if the source is looking down (maybe make this toggleable as a boolean)
+                if (heightDiff > 0) // The source is looking down
                 {
+                    // Calculate a new squared range
+                    tempRangeSqr = Mathf.Pow(range + (heightDiff * heightMod), 2);
+                }
+                else // The source is looking forward or up
+                {
+                    // use the already calculated range sqr
+                    tempRangeSqr = rangeSqr;
+                }
+
+                // Test if its in range
+                if (GetDistSqr(centerTile, x, y) <= tempRangeSqr) // It is in range
+                {
+                    // Add this tile to the list
                     tiles.Add(map[x, y]);
                 }
             }
@@ -473,15 +516,15 @@ public class LevelSpawner : MonoBehaviour
 
         return tiles;
     }
-    public List<Tile> TilesInRange(Creature creature, float range)
+    public List<Tile> TilesInRange(Creature creature, float range, float heightMod)
     {
-        return TilesInRange(creature.Space, range);
+        return TilesInRange(creature.Space, range, heightMod);
     }
-    public List<Tile> TilesInRange(int x, int y, float range)
+    public List<Tile> TilesInRange(int x, int y, float range, float heightMod)
     {
         Tile centerTile = map[x, y];
 
-        return TilesInRange(centerTile, range);
+        return TilesInRange(centerTile, range, heightMod);
     }
 
     public List<Tile> TilesInLine(Tile startTile, Tile targetTile, float length, float width)

@@ -10,6 +10,7 @@ public class ActionData : ScriptableObject
     public string displayName;
     public string animationTrigger;
     public string castAnimationTrigger; // The animation trigger that the cast action will use if this action has a casting time
+    public GameObject projectilePrefab;
     public Sprite buttonImage;
 
     [Header("Other Action data")]

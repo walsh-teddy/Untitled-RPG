@@ -16,6 +16,9 @@ public class Pointer : MonoBehaviour
     PlayerManager playerManager;
     Game game;
 
+    // Only used if this is a level editor
+    LevelEditorManager levelEditorManager;
+
     [Header("Raycasting")]
     [SerializeField] LayerMask layersToHit;
     [SerializeField] LayerMask layersToIgnore;
@@ -52,6 +55,16 @@ public class Pointer : MonoBehaviour
 
         // Save the camera
         mainCamera = Camera.main;
+
+        // Only used if this is a level editor
+        try
+        {
+            levelEditorManager = (LevelEditorManager)game;
+        }
+        catch
+        {
+            // Do nothing lol
+        }
     }
 
     private void Start()
@@ -154,6 +167,26 @@ public class Pointer : MonoBehaviour
                     }
 
                     break;
+
+                case gameState.editingMap:
+                    switch (levelEditorManager.BrushType)
+                    {
+                        case BrushType.Terraform:
+                        case BrushType.Rough:
+                            // Heavy highlight the hovering tile
+                            levelEditorManager.Brush.SetTarget(hoveringTile);
+
+                            levelSpawner.HighlightTiles(
+                                levelEditorManager.Brush.PossibleTargets // Heavy Highlight
+                            );
+                            break;
+
+                        case BrushType.Details:
+                            // Only highlight the 1 tile
+                            levelSpawner.HighlightTiles(hoveringTileInAList);
+                            break;
+                    }
+                    break;
             }
         }
         else
@@ -224,6 +257,11 @@ public class Pointer : MonoBehaviour
                 break;
 
             // In any state where trying to find an AOE, leftclicking should select the origin tile (if there is one)
+
+            case gameState.editingMap:
+                levelEditorManager.Paint(hoveringTile);
+                break;
+
             default:
                 aoeTargetTile = hoveringTile;
                 break;
@@ -242,35 +280,26 @@ public class Pointer : MonoBehaviour
             return;
         }
 
-        // Unlock the AOE target if it was locked
-        if (aoeTargetLocked) // It was AOE target locked
-        {
-            aoeTargetLocked = false;
-            uiManager.HideTargetHighlights();
-        } else // The AOE target was not locked
-        {
-            // Go back 1 step in the menu
-            playerManager.BackButtonClicked();
 
+        switch (game.CurrentState)
+        {
+            case gameState.editingMap:
+                levelEditorManager.Reduce(hoveringTile);
+                break;
+
+            default:
+                // Unlock the AOE target if it was locked
+                if (aoeTargetLocked) // It was AOE target locked
+                {
+                    aoeTargetLocked = false;
+                    uiManager.HideTargetHighlights();
+                }
+                else // The AOE target was not locked
+                {
+                    // Go back 1 step in the menu
+                    playerManager.BackButtonClicked();
+                }
+                break;
         }
-    }
-
-    int timerCounter = 0;
-    private IEnumerator testTimerStuff()
-    {
-        Debug.Log("testTimerStuff() called. Timer = " + timerCounter);
-
-        yield return new WaitForSeconds(1);
-
-        if (timerCounter >= 5)
-        {
-            Debug.Log("Timer done!");
-
-            yield break;
-        }
-
-        timerCounter += 1;
-
-        StartCoroutine(testTimerStuff());
     }
 }

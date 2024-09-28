@@ -81,6 +81,8 @@ public class CameraFocus : MonoBehaviour
 
     private void OnEnable()
     {
+        playerManager = game.PlayerManager;
+
         // Move Control (WASD)
         moveControl = playerInput.Player.Move;
         moveControl.Enable();
@@ -98,25 +100,29 @@ public class CameraFocus : MonoBehaviour
         changeFocusControl.Enable();
         changeFocusControl.performed += ChangeFocus;
 
-        // Change Perspective Control (T)
-        changePerspectiveControl = playerInput.Player.ChangePerspective;
-        changePerspectiveControl.Enable();
-        changePerspectiveControl.performed += ChangePerspective;
+        // Only add these controls if there are players
+        if (playerManager != null) // there are players!
+        {
+            // Change Perspective Control (T)
+            changePerspectiveControl = playerInput.Player.ChangePerspective;
+            changePerspectiveControl.Enable();
+            changePerspectiveControl.performed += ChangePerspective;
 
-        // Cycle players forward (Tab)
-        cyclePlayersForwardControl = playerInput.Player.CyclePlayersForward;
-        cyclePlayersForwardControl.Enable();
-        cyclePlayersForwardControl.performed += CyclePlayersForward;
+            // Cycle players forward (Tab)
+            cyclePlayersForwardControl = playerInput.Player.CyclePlayersForward;
+            cyclePlayersForwardControl.Enable();
+            cyclePlayersForwardControl.performed += CyclePlayersForward;
 
-        // Cycle players backwards (L-Shift)
-        cyclePlayersBackwardsControl = playerInput.Player.CyclePlayersBackwards;
-        cyclePlayersBackwardsControl.Enable();
-        cyclePlayersBackwardsControl.performed += CyclePlayersBackwards;
+            // Cycle players backwards (L-Shift)
+            cyclePlayersBackwardsControl = playerInput.Player.CyclePlayersBackwards;
+            cyclePlayersBackwardsControl.Enable();
+            cyclePlayersBackwardsControl.performed += CyclePlayersBackwards;
 
-        // Focus Selected Player (Space)
-        FocusSelectedPlayerControl = playerInput.Player.FocusSelectedPlayer;
-        FocusSelectedPlayerControl.Enable();
-        FocusSelectedPlayerControl.performed += FocusSelectedPlayer;
+            // Focus Selected Player (Space)
+            FocusSelectedPlayerControl = playerInput.Player.FocusSelectedPlayer;
+            FocusSelectedPlayerControl.Enable();
+            FocusSelectedPlayerControl.performed += FocusSelectedPlayer;
+        }
     }
 
     private void OnDisable()
@@ -125,10 +131,15 @@ public class CameraFocus : MonoBehaviour
         zoomControl.Disable();
         rotateControl.Disable();
         changeFocusControl.Disable();
-        changePerspectiveControl.Disable();
-        cyclePlayersForwardControl.Disable();
-        cyclePlayersBackwardsControl.Disable();
-        FocusSelectedPlayerControl.Disable();
+
+        // These controls were only enabled if there were players
+        if (playerManager != null) // There are players
+        {
+            changePerspectiveControl.Disable();
+            cyclePlayersForwardControl.Disable();
+            cyclePlayersBackwardsControl.Disable();
+            FocusSelectedPlayerControl.Disable();
+        }
     }
 
     void Start()

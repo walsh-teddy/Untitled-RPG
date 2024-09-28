@@ -50,6 +50,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayName: Grass
+  baseMovementCost: 1
   heightGradiant:
     serializedVersion: 2
     key0: {r: 0.43529412, g: 0.8509804, b: 0.44705883, a: 1}

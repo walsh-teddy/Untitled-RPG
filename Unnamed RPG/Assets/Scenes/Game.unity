@@ -1350,16 +1350,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff7f4d73c17c9ea4aab085f6efde56d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapFile: Assets/Maps/TestFlat.txt
+  mapFile: Assets/StreamingAssets/Maps/MeleeTest.txt
   tileSize: 1
-  playerPrefab1: {fileID: 3187343870214836086, guid: a1109eddb245d8642aeae5de22f578db, type: 3}
-  playerPrefab2: {fileID: 3187343870214836086, guid: c0dbf93f69b031c4c863c8d16677a7ed, type: 3}
-  playerPrefab3: {fileID: 3187343870214836086, guid: 58c830575143a96489f2ed2a49d5ba3a, type: 3}
-  playerPrefab4: {fileID: 3187343870214836086, guid: 99de1020be2c3764c929ac0ab857cd96, type: 3}
-  enemyPreafab: {fileID: 1628694780693302027, guid: 45b4636b078f9f341848f500bec44c35, type: 3}
-  randomEnemyPrefab: {fileID: 1628694780693302027, guid: 4de7610fb37bf8248a26df17fef57df6, type: 3}
-  tilePrefab: {fileID: 1345406498252121027, guid: 378de4140d33bed4693c899a86bedefc, type: 3}
-  rockPreafab: {fileID: 1559032785381011979, guid: 6c3c4ffbeeadedb41a3ae9648f8e76ee, type: 3}
+  playerPrefabList:
+  - {fileID: 3187343870214836086, guid: a1109eddb245d8642aeae5de22f578db, type: 3}
+  - {fileID: 3187343870214836086, guid: c0dbf93f69b031c4c863c8d16677a7ed, type: 3}
+  - {fileID: 3187343870214836086, guid: 58c830575143a96489f2ed2a49d5ba3a, type: 3}
+  - {fileID: 3187343870214836086, guid: 99de1020be2c3764c929ac0ab857cd96, type: 3}
+  enemyPrefabList:
+  - {fileID: 1628694780693302027, guid: 45b4636b078f9f341848f500bec44c35, type: 3}
+  obstaclePrefabList:
+  - {fileID: 1559032785381011979, guid: 6c3c4ffbeeadedb41a3ae9648f8e76ee, type: 3}
+  tilePrefabList:
+  - {fileID: 1345406498252121027, guid: 378de4140d33bed4693c899a86bedefc, type: 3}
+  - {fileID: 1345406498252121027, guid: 78fedbde730d7eb4f95312ac5c465833, type: 3}
+  - {fileID: 1345406498252121027, guid: b33d67fb96adfc945910a96394acb97c, type: 3}
 --- !u!4 &695018028
 Transform:
   m_ObjectHideFlags: 0

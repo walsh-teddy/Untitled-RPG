@@ -17,7 +17,7 @@ public class Obstacle : MonoBehaviour
     {
         get { return space; }
     }
-    public string Name
+    public string DisplayName
     {
         get { return displayName; }
     }
@@ -32,7 +32,7 @@ public class Obstacle : MonoBehaviour
         
     }
 
-    public virtual void Create(Tile space, float height)
+    public virtual void Create(Tile space)
     {
         // Get the value for the level spawner
         gameManager = GameObject.FindGameObjectWithTag("GameManager");
@@ -40,7 +40,8 @@ public class Obstacle : MonoBehaviour
 
         // Attatch to the tile
         this.space = space;
-        this.height = height;
+
+        gameObject.transform.position = space.RealPosition;
     }
 
     public override string ToString()

@@ -5,7 +5,7 @@ using UnityEngine;
 public class AOEAttack : Attack
 {
     // Variables
-    bool circleCenterIgnoreLineOfSight;
+    protected bool circleCenterIgnoreLineOfSight;
     protected aoeTypes aoeType;
     protected float aoeReach; // The radius of a circle and the width of a line
     protected float aoeAngle; // How wide a cone will be (only used by cone)
@@ -64,7 +64,7 @@ public class AOEAttack : Attack
         aoeTargetTile = target;
 
         // If its a circle AOE, make sure the target is within range
-        if (aoeType == aoeTypes.circle && !possibleSpaces.Contains(target))
+        if (aoeType == aoeTypes.circle && !possibleSpaces.Contains(target) && source != null)
         {
             aoeTargetTile = source.Owner.Space;
         }
@@ -77,6 +77,12 @@ public class AOEAttack : Attack
 
         // Target all tiles in the area
         targets = possibleTargets;
+
+        // Break out if there is no source (only really happens if this is a brush)
+        if (source == null)
+        {
+            return;
+        }
 
         // Update the list of creatures in that area
         aoeTilesWithCreature = source.LevelSpawnerRef.TilesWithCreatures(targets);
@@ -108,7 +114,7 @@ public class AOEAttack : Attack
         if (aoeType == aoeTypes.circle)
         {
             // Get all spaces within range
-            possibleSpaces = source.LevelSpawnerRef.TilesInRange(source.Owner, range + 0.5f);
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(source.Owner, range + 0.5f, 0);
             if (!circleCenterIgnoreLineOfSight) // The center of the target needs line of sight
             {
                 possibleSpaces = possibleSpaces = source.LevelSpawnerRef.LineOfSight(possibleSpaces, source.Owner, true);
@@ -135,7 +141,7 @@ public class AOEAttack : Attack
                 origin = aoeTargetTile;
 
                 // Get every tile within range of the explosion
-                possibleTargets = source.LevelSpawnerRef.TilesInRange(origin, aoeReach);
+                possibleTargets = source.LevelSpawnerRef.TilesInRange(origin, aoeReach, -1);
                 if (!ignoreLineOfSight) // The explosion needs line of sight
                 {
                     possibleTargets = source.LevelSpawnerRef.LineOfSight(possibleTargets, origin, true);

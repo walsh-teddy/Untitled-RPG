@@ -156,7 +156,7 @@ GameObject:
   - component: {fileID: 5314327885035158028}
   - component: {fileID: 2250406955523199369}
   m_Layer: 0
-  m_Name: Hilt
+  m_Name: Pole
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

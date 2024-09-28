@@ -151,7 +151,7 @@ public class BuffAction : Action
         // Update the list of all possible spaces
 
         // Get a list of every tile within range of the ability
-        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f);
+        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, 0);
         // Only add targets in line of sight if thats required
         if (!ignoreLineOfSight) // This ability needs line of sight
         {

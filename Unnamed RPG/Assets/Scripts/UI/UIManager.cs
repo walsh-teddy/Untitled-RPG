@@ -8,34 +8,34 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     // TODO: Can probably get rid of displayText soon
-    [SerializeField] TextMeshProUGUI displayText;
-    [SerializeField] Canvas canvas;
+    [SerializeField] protected TextMeshProUGUI displayText;
+    [SerializeField] protected Canvas canvas;
 
     [Header("Colors")]
     // TODO: Make this more readable and sturdy if the order of the phases change
-    [SerializeField] List<Color> phaseColors; // A list of colors that each phase uses (goes in order -> PredictedDecision, Decision, Prep, Attack, Move
+    [SerializeField] protected List<Color> phaseColors; // A list of colors that each phase uses (goes in order -> PredictedDecision, Decision, Prep, Attack, Move
 
     // Action Bar
     [Header("Action Bar")]
-    [SerializeField] GameObject actionBar;
-    [SerializeField] GameObject backButton;
-    [SerializeField] GameObject submitButton;
-    [SerializeField] GameObject uiRootOrigin;
-    [SerializeField] GameObject uiRootPrefab;
-    [SerializeField] GameObject uiRootCenterOrigin;
-    [SerializeField] GameObject uiRootCenterPrefab;
-    [SerializeField] GameObject actionSourceButtonPrefab;
-    [SerializeField] GameObject actionButtonPrefab;
-    [SerializeField] GameObject undoButtonPrefab;
-    [SerializeField] GameObject undoButtonRootPrefab;
+    [SerializeField] protected GameObject actionBar;
+    [SerializeField] protected GameObject backButton;
+    [SerializeField] protected GameObject submitButton;
+    [SerializeField] protected GameObject uiRootOrigin;
+    [SerializeField] protected GameObject uiRootPrefab;
+    [SerializeField] protected GameObject uiRootCenterOrigin;
+    [SerializeField] protected GameObject uiRootCenterPrefab;
+    [SerializeField] protected GameObject actionSourceButtonPrefab;
+    [SerializeField] protected GameObject actionButtonPrefab;
+    [SerializeField] protected GameObject undoButtonPrefab;
+    [SerializeField] protected GameObject undoButtonRootPrefab;
 
     [Header("Special Action Buttons")]
-    [SerializeField] GameObject uiMoveChaseButtonPrefab;
+    [SerializeField] protected GameObject uiMoveChaseButtonPrefab;
 
     [Header("Phase Bar")]
-    [SerializeField] List<uiPhaseBar> phaseBarPannels;
-    [SerializeField] float activeColorAlpha = 1;
-    [SerializeField] float innactiveColorAlpha = 0.2f;
+    [SerializeField] protected List<uiPhaseBar> phaseBarPannels;
+    [SerializeField] protected float activeColorAlpha = 1;
+    [SerializeField] protected float innactiveColorAlpha = 0.2f;
     public float ActiveColorAlpha
     {
         get { return activeColorAlpha; }
@@ -47,26 +47,26 @@ public class UIManager : MonoBehaviour
 
     // Player Move Line Renderer
     [Header("Widgets")]
-    [SerializeField] GameObject tilePointPrefab;
-    [SerializeField] GameObject lineRendererPrefab;
-    [SerializeField] GameObject selectedCreatureHighlight;
-    [SerializeField] GameObject targetHighlightPrefab;
-    List<MeshRenderer> tilePointList = new List<MeshRenderer> { };
-    List<LineRenderer> lineRendererList = new List<LineRenderer> { };
-    List<GameObject> targetHighlights = new List<GameObject> { };
-    [SerializeField] float tilePointOffset = 1.0f; // How far above a tile the tile point hovers
-    [SerializeField] int startingWidgitCount = 5;
-    [SerializeField] GameObject plannedMovementMarkerPrefab;
-    List<GameObject> plannedMovementMarkerList = new List<GameObject> { };
+    [SerializeField] protected GameObject tilePointPrefab;
+    [SerializeField] protected GameObject lineRendererPrefab;
+    [SerializeField] protected GameObject selectedCreatureHighlight;
+    [SerializeField] protected GameObject targetHighlightPrefab;
+    protected List<MeshRenderer> tilePointList = new List<MeshRenderer> { };
+    protected List<LineRenderer> lineRendererList = new List<LineRenderer> { };
+    protected List<GameObject> targetHighlights = new List<GameObject> { };
+    [SerializeField] protected float tilePointOffset = 1.0f; // How far above a tile the tile point hovers
+    [SerializeField] protected int startingWidgitCount = 5;
+    [SerializeField] protected GameObject plannedMovementMarkerPrefab;
+    protected List<GameObject> plannedMovementMarkerList = new List<GameObject> { };
 
     [Header("Other")]
-    [SerializeField] GameObject loadingScreen;
-    [SerializeField] GameObject readyButton;
+    [SerializeField] protected GameObject loadingScreen;
+    [SerializeField] protected GameObject readyButton;
 
     // Other scripts
-    LevelSpawner levelSpawner;
-    PlayerManager playerManager;
-    Game game;
+    protected LevelSpawner levelSpawner;
+    protected PlayerManager playerManager;
+    protected Game game;
 
 
     // Properties
@@ -109,13 +109,13 @@ public class UIManager : MonoBehaviour
         get { return uiMoveChaseButtonPrefab; }
     }
 
-    private void Awake()
+    protected void Awake()
     {
         levelSpawner = gameObject.GetComponent<LevelSpawner>();
         game = gameObject.GetComponent<Game>();
     }
 
-    private void Start()
+    protected void Start()
     {
         // Start each list at startingWidgitCount
         CreateTilePoints(startingWidgitCount);
@@ -158,7 +158,7 @@ public class UIManager : MonoBehaviour
     }
 
     // After the map is created, create all the UI elements for each player
-    public void CreateUI()
+    public virtual void CreateUI()
     {
         Debug.Log("Creating UI");
 
@@ -177,7 +177,7 @@ public class UIManager : MonoBehaviour
     }
 
     // Methods
-    public void UpdateUI()
+    public virtual void UpdateUI()
     {
         // Reset everything
         HidePlayerMoveLines();

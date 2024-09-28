@@ -37,6 +37,7 @@ public class Action
 
     // Animation
     protected string animationTrigger;
+    protected GameObject projectilePrefab;
 
     // UI
     uiActionButton uiButton; // Empty object thats turned on and off to turn the buttons for the action source buttons on and off (off when an action is selected)
@@ -233,6 +234,12 @@ public class Action
         isMinorAction = data.isMinorAction;
         animationTrigger = data.animationTrigger;
         buttonImage = data.buttonImage;
+
+
+        if (data.projectilePrefab != null) // It has a projectile
+        {
+            projectilePrefab = data.projectilePrefab;
+        }
 
         // Default values that will be overwritten by child constructors
         actionType = actionType.none;
@@ -563,5 +570,10 @@ public class Action
     public virtual void UpdateUI()
     {
         uiButton.UpdateUI();
+    }
+
+    public virtual void FireProjectile()
+    {
+        source.FireProjectile(projectilePrefab, targets[0].Occupant.Body.transform.position);
     }
 }

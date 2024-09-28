@@ -14,6 +14,5 @@ public class AttackData : ActionData
     public float range;
     public float closeRange = -1; // Leave as -1 if its a melee attack
     public bool ignoreLineOfSight;
-    public GameObject projectilePrefab;
     public List<attackEffects> extraEffects;
 }

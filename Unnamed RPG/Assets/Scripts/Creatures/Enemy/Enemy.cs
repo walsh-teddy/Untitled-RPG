@@ -72,10 +72,10 @@ public class Enemy : Creature
                 if (move.Playable)
                 {
                     // Set the target
+                    move.Chasing = true;
                     move.SetTarget(levelSpawner.NearestCreature(teamManager.Enemies, this).Space);
 
                     // Submit the action
-                    move.Chasing = true;
                     SubmitAction(move);
 
                     // TODO: Instead have each enemy mark when they are ready and have the team manager ReadyUp once all AI are ready

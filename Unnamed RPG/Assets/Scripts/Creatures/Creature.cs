@@ -602,6 +602,23 @@ public class Creature : MonoBehaviour
         return damage;
     }
 
+    // Returns the ammount that wasn't paid for (if any)
+    public int SpendEnergy(int energyCost)
+    {
+        // Spend the energy
+        energy -= energyCost;
+
+        // Clamp energy to 0 if it goes too low
+        if (energy < 0) // Energy has gone below 0
+        {
+            int extra = 0 - energy;
+            energy = 0;
+            return extra;
+        }
+
+        return 0;
+    }
+
     public virtual void EndTurn()
     {
         // Lower cooldowns and recharges
@@ -926,6 +943,7 @@ public class Creature : MonoBehaviour
         }
     }
 
+    // Get pushed
     public bool Push(Tile origin, float distance)
     {
         // TODO: Go through each step of the push to stop it from going through walls
@@ -958,5 +976,14 @@ public class Creature : MonoBehaviour
 
         // TODO: Put it in a seperate list of thrown weapons or something, rather than deleting it
         Destroy(actionSource.gameObject);
+
+        // TODO: Update how they should be holding weapons (like animation-wise)
+    }
+
+    public virtual void FireProjectile()
+    {
+        // Tell whatever action that is being done by this creautre right now to fire a projectile
+        game.ActiveAction(this).FireProjectile();
+
     }
 }

@@ -14,7 +14,6 @@ public class Attack : Action
     protected float closeRange; // Range that is too close to hit. Only used for ranged attacks
     protected bool isRanged; // True if a ranged attack. False if a melee attack
     protected bool originatesFromAttacker = true; // Only false if origin isn't where the attacker stands
-    protected GameObject projectilePrefab;
     // TODO: Maybe target should be a tile in the case of AOEs?
     // TODO: Allow for AOE attacks like fireballs or shield blocks
     protected List<attackEffects> extraEffects;
@@ -141,10 +140,6 @@ public class Attack : Action
         {
             isRanged = true;
             closeRange = data.closeRange;
-            if (data.projectilePrefab != null) // It has a projectile
-            {
-                projectilePrefab = data.projectilePrefab;
-            }
         }
         else // It is melee
         {
@@ -162,9 +157,19 @@ public class Attack : Action
         // If its a throw attack, remove this weapon from the owner's inventory
         if (extraEffects.Contains(attackEffects.throwWeapon)) // It is a throw attack
         {
-            // TODO: Make this work lol
             source.Owner.RemoveActionSource(source);
             //Debug.Log(source.DisplayName + " is being thrown (but that still needs to be programmed)");
+        }
+    }
+
+    public override void FireProjectile()
+    {
+        base.FireProjectile();
+
+        // Also make the weapon invisible if its being thrown (it gets removed after the animation has finished in DoAction())
+        if (extraEffects.Contains(attackEffects.throwWeapon)) // It is being thrown
+        {
+            source.gameObject.SetActive(false);
         }
     }
 
@@ -178,20 +183,6 @@ public class Attack : Action
         else if (missedCreatureTargets.Count > 0)
         {
             source.Owner.RotateToFaceTile(missedCreatureTargets[0].Space);
-        }
-
-        // Fire the projectile if its ranged
-        // TODO: Move this to an animation event rather than calling it on the first frame
-        if (isRanged && projectilePrefab != null) // It is a ranged attack and has a projectile
-        {
-            source.FireProjectile(projectilePrefab, targets[0].Occupant.Body.transform.position);
-        }
-
-        // Turn off the weapon model if it throws
-        if (extraEffects.Contains(attackEffects.throwWeapon))
-        {
-            // TODO: This will also turn off the left hand of 2 handed weapons (like the spear)
-            source.gameObject.SetActive(false);
         }
 
         base.PlayAnimation();
@@ -229,20 +220,28 @@ public class Attack : Action
         // Update the list of all possible spaces
 
         // Get a list of every tile within range of the attack
-        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f);
-        // Only add targets in line of sight if thats required
-        if (!ignoreLineOfSight) // This attack needs line of sight
+        if (!isRanged) // It is melee
         {
-            possibleSpaces = source.LevelSpawnerRef.LineOfSight(possibleSpaces, source.Owner, true);
+            // Get the range (targets further down count as further away)
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, -1);
         }
-        // Excluce the close range if its a ranged attack
-        if (isRanged) // The attack is ranged
+        else // Its Ranged
         {
-            foreach (Tile tile in source.LevelSpawnerRef.TilesInRange(origin, closeRange + 0.5f))
+            // Get the range (accounting for height difs)
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, 1);
+
+            // Remove targets from close range
+            foreach (Tile tile in source.LevelSpawnerRef.TilesInRange(origin, closeRange + 0.5f, -1))
             {
                 // This tile is too close. Remove it from the list
                 possibleSpaces.Remove(tile);
             }
+        }
+
+        // Only add targets in line of sight if thats required
+        if (!ignoreLineOfSight) // This attack needs line of sight
+        {
+            possibleSpaces = source.LevelSpawnerRef.LineOfSight(possibleSpaces, source.Owner, true);
         }
 
         // Find every possible target within range (only enemies)

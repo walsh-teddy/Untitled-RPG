@@ -7,51 +7,47 @@ using System;
 public class Game : MonoBehaviour
 {
     // ATTRIBUTES
-    static phase currentPhase;
+    protected static phase currentPhase;
 
     public List<ActionSource> thrownWeapons = new List<ActionSource> { };
-    UIManager uiManager;
-    LevelSpawner levelSpawner;
-    PlayerManager playerManager; // Included in teamMangers
-    Dictionary<string, TeamManager> teams = new Dictionary<string, TeamManager> { };
-    Pointer pointer;
-    [SerializeField] CameraFocus cameraFocus;
-    List<Creature> creatures = new List<Creature> { }; // Only contains the living creatures
-    List<Creature> deadCreatures = new List<Creature> { };
-    List<Creature> creaturesToDecideAction = new List<Creature> { };
-    static List<Action> actionStack = new List<Action> { };
+    protected UIManager uiManager;
+    protected LevelSpawner levelSpawner;
+    protected PlayerManager playerManager; // Included in teamMangers
+    protected Dictionary<string, TeamManager> teams = new Dictionary<string, TeamManager> { };
+    protected Pointer pointer;
+    [SerializeField] protected CameraFocus cameraFocus;
+    protected List<Creature> creatures = new List<Creature> { }; // Only contains the living creatures
+    protected List<Creature> deadCreatures = new List<Creature> { };
+    protected List<Creature> creaturesToDecideAction = new List<Creature> { };
+    protected static List<Action> actionStack = new List<Action> { };
     [SerializeField] public const int CLASH_ATTACK_WINDOW = 1; // If 2 attacks roll within [this] of eachother, then they clash
 
     // Lists of actions per phase
-    List<Action> actionsThisPhase = new List<Action> { };
-    List<CastAction> castsThisPhase = new List<CastAction> { };
-    List<Attack> attacksThisPhase = new List<Attack> { };
-    List<Move> movesThisPhase = new List<Move> { };
-    List<BuffAction> buffsThisPhase = new List<BuffAction> { };
+    protected List<Action> actionsThisPhase = new List<Action> { };
+    protected List<CastAction> castsThisPhase = new List<CastAction> { };
+    protected List<Attack> attacksThisPhase = new List<Attack> { };
+    protected List<Move> movesThisPhase = new List<Move> { };
+    protected List<BuffAction> buffsThisPhase = new List<BuffAction> { };
 
     [Header("Animation")]
-    [SerializeField] float castAnimationTime = 1.5f; // Time (in seconds) that a cast action animation takes
-    [SerializeField] float attackAnimationTime = 2; // Time (in seconds) that an attack animation takes
-    [SerializeField] float buffAnimationTime = 1.5f; // Time (in seconds) that a buff animation takes
-    [SerializeField] float moveAnimationTime = 1; // Time (in seconds) that a move animation takes
-    [SerializeField] float animationPauseTime = 1; // Time (in seconds) in between animations
-    [SerializeField] float moveAnimationPauseTime = 0.5f;
+    [SerializeField] protected float castAnimationTime = 1.5f; // Time (in seconds) that a cast action animation takes
+    [SerializeField] protected float attackAnimationTime = 2; // Time (in seconds) that an attack animation takes
+    [SerializeField] protected float buffAnimationTime = 1.5f; // Time (in seconds) that a buff animation takes
+    [SerializeField] protected float moveAnimationTime = 1; // Time (in seconds) that a move animation takes
+    [SerializeField] protected float animationPauseTime = 1; // Time (in seconds) in between animations
+    [SerializeField] protected float moveAnimationPauseTime = 0.5f;
 
     // ATTACK PHASE LOGIC
-    //private float attackTimer;
-    //private float attackPauseTimer;
-    //private bool attackTimerRunning = false;
-    //private bool attackPauseTimerRunning = false;
-    private int currentAttackLineIndex = 0;
-    List<AttackLine> attackLinesThisPhase = new List<AttackLine> { };
-    List<Tile> possibleTargetsThisRound = new List<Tile> { };
+    protected int currentAttackLineIndex = 0;
+    protected List<AttackLine> attackLinesThisPhase = new List<AttackLine> { };
+    protected List<Tile> possibleTargetsThisRound = new List<Tile> { };
 
     // MOVE PHASE LOGIC
-    //private int longestMove;
-    private int currentMoveStep = 1;
+    //protected int longestMove;
+    protected int currentMoveStep = 1;
 
     // States
-    private gameState currentState = gameState.nothingSelected;
+    protected gameState currentState = gameState.nothingSelected;
 
     // PROPERTY
     public gameState CurrentState
@@ -115,7 +111,7 @@ public class Game : MonoBehaviour
     }
 
     // METHODS
-    private void Awake()
+    protected void Awake()
     {
         // Set up variables
         uiManager = gameObject.GetComponent<UIManager>();
@@ -128,7 +124,7 @@ public class Game : MonoBehaviour
         playerManager = new PlayerManager();
         teams.Add("player", playerManager);
     }
-    private void Start()
+    protected void Start()
     {
         // Now that all the variables are set up (in Awake), push commands to other components
         levelSpawner.SpawnLevel();
@@ -185,7 +181,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    private IEnumerator NextPhase()
+    protected IEnumerator NextPhase()
     {
         // Change current phase
         UpdateCurrentPhase();
@@ -221,7 +217,7 @@ public class Game : MonoBehaviour
         // Update the UI
         uiManager.UpdateUI();
     }
-    private void UpdateCurrentPhase()
+    protected void UpdateCurrentPhase()
     {
         // Switch to the next phase
         switch (currentPhase)
@@ -244,7 +240,7 @@ public class Game : MonoBehaviour
                 break;
         }
     }
-    private void UpdateActionLists()
+    protected void UpdateActionLists()
     {
         actionsThisPhase.Clear();
         castsThisPhase.Clear();
@@ -287,7 +283,7 @@ public class Game : MonoBehaviour
 
     }
 
-    private void EndTurn()
+    protected void EndTurn()
     {
         // Remove creatures who died
         // TODO: Delete creatures to stop memory leaks
@@ -320,7 +316,7 @@ public class Game : MonoBehaviour
     // PREDICTED DECISISION PHASE
 
     // DECISISION PHASE
-    private IEnumerator DecisionPhase(bool creaturesShouldBePredicted)
+    protected IEnumerator DecisionPhase(bool creaturesShouldBePredicted)
     {
         currentState = gameState.nothingSelected;
         // Check if everyone is being predicted (likely no), if everybody then move to the next phase. Else mark everyone who needs to decide on an action
@@ -346,7 +342,7 @@ public class Game : MonoBehaviour
     }
 
     // ACTION PHASE (a phase where actions are resolved, like Prep, Attack, and Move)
-    private IEnumerator ActionPhase()
+    protected IEnumerator ActionPhase()
     {
         CurrentState = gameState.uninteractable;
 
@@ -372,7 +368,7 @@ public class Game : MonoBehaviour
     }
 
     // Returns true if all cast actions are done
-    private IEnumerator ResolveCastActions()
+    protected IEnumerator ResolveCastActions()
     {
         //Debug.Log("ResolveCastActions() called");
 
@@ -393,7 +389,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    private IEnumerator ResolveAttackActions()
+    protected IEnumerator ResolveAttackActions()
     {
         //Debug.Log("ResolveAttackActions() called");
 
@@ -468,7 +464,7 @@ public class Game : MonoBehaviour
         yield return NextAttack();
     }
 
-    private IEnumerator ResolveBuffActions()
+    protected IEnumerator ResolveBuffActions()
     {
         //Debug.Log("ResolveBuffActions() called");
 
@@ -489,7 +485,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    private IEnumerator ResolveMoveActions()
+    protected IEnumerator ResolveMoveActions()
     {
         //Debug.Log("ResolveMoveActions()");
 
@@ -506,7 +502,7 @@ public class Game : MonoBehaviour
     }
 
     // ATTACK PHAES
-/*    private void AttackPhase()
+/*    protected void AttackPhase()
     {
         currentState = gameState.uninteractable;
         // Recalculate all of the creatureTargets to see if they're still in range and line of sight (walls can be summoned
@@ -573,7 +569,7 @@ public class Game : MonoBehaviour
         NextAttack();
     }
 */
-    private IEnumerator NextAttack()
+    protected IEnumerator NextAttack()
     {
         // Go to the next index
         currentAttackLineIndex += 1;
@@ -613,7 +609,7 @@ public class Game : MonoBehaviour
     }
 
     // MOVE PHASE
-/*    private void MovePhase()
+/*    protected void MovePhase()
     {
         currentState = gameState.uninteractable;
         Debug.Log("MovePhaseStart()");
@@ -635,7 +631,7 @@ public class Game : MonoBehaviour
 
         StartCoroutine(MoveNextStep());
     }*/
-    private IEnumerator MoveNextStep()
+    protected IEnumerator MoveNextStep()
     {
         //Debug.Log("MoveNextStep() called");
 
@@ -704,7 +700,7 @@ public class Game : MonoBehaviour
 
 
     // called every move step to check if creatures are colliding and resolve the result of that
-    private void ResolveMoveCollisions()
+    protected void ResolveMoveCollisions()
     {
         // Empty each creature's list of collisions this step
         foreach (Creature creature in creatures)
@@ -894,5 +890,21 @@ public class Game : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public Action ActiveAction(Creature creature)
+    {
+        // Look through all actions this phase and find the first one that is being done by this creature
+        foreach (Action action in actionsThisPhase)
+        {
+            if (action.Source.Owner == creature)
+            {
+                return action;
+            }
+        }
+
+        // Return null with an error if no action was found being done by this creature this phase
+        Debug.LogError("ActiveAction() called for a creature not committing an action");
+        return null;
     }
 }
