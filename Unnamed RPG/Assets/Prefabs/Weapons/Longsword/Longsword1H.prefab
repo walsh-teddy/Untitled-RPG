@@ -138,9 +138,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b9209242370064b42b9bbd0353096fc7, type: 2}
   animationType: 0
   handCount: 1
+  buttonImage: {fileID: 21300000, guid: 190c12b775bbc474ea67b1accb2c80bb, type: 3}
   weaponType: 0
   slots: 2
-  versatileForm: {fileID: 6795539315017271146, guid: 0257325d4f089ed4987d6180dab26967, type: 3}
+  versatileFormPrefab: {fileID: 2691190363056632325, guid: 0257325d4f089ed4987d6180dab26967, type: 3}
   magicLevel: 0
   leftHandRest: {fileID: 0}
 --- !u!1 &6392919496597419331

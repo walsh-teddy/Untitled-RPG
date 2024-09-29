@@ -54,7 +54,7 @@ MonoBehaviour:
   handCount: 1
   weaponType: 0
   slots: 2
-  versatileForm: {fileID: 6980407149530252152, guid: 78f83a11abc236d47821579573e8a84e, type: 3}
+  versatileFormPrefab: {fileID: 2691190363056632325, guid: 78f83a11abc236d47821579573e8a84e, type: 3}
   magicLevel: 0
   leftHandRest: {fileID: 0}
 --- !u!1 &2765540892357480267

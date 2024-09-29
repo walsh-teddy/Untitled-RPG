@@ -9,13 +9,14 @@ public class ActionSource : MonoBehaviour
     [SerializeField] protected List<ActionData> actionDataList;
     [SerializeField] protected weaponAnimationType animationType;
     [SerializeField] protected int handCount;
+    [SerializeField] protected Sprite buttonImage;
 
     // Attributes
     [Header("Weapon-specific data")]
     [SerializeField] protected weaponType weaponType;
     [SerializeField] protected int slots;
-    protected bool isversatile;
-    [SerializeField] protected ActionSource versatileForm; // The weapon that this versatile weapon switches to
+    [SerializeField] GameObject versatileFormPrefab;
+    protected ActionSource versatileForm; // The weapon that this versatile weapon switches to
     [SerializeField] int magicLevel; // 0 for most weapons, 1-3 for magic weapons that allows for certain levels of spellcasting
     [SerializeField] GameObject leftHandRest; // Where the left hand should hold onto the weapon (right hand uses the origin) (only use for 2 handed weapons)
 
@@ -116,16 +117,15 @@ public class ActionSource : MonoBehaviour
     }
     public bool IsVersatile
     {
-        get { return isversatile; }
+        get { return (versatileForm != null); }
     }
     public ActionSource VersatileForm
     {
-        get { return VersatileForm; }
+        get { return versatileForm; }
         set
         {
             // If something is given a versatile form, that means its versetile and things should be adjusted
             // 2 handed options are given this in the 1 handed constructors
-            isversatile = true;
             versatileForm = value;
         }
     }
@@ -140,6 +140,10 @@ public class ActionSource : MonoBehaviour
     public int MagicLevel
     {
         get { return magicLevel; }
+    }
+    public Sprite ButtonImage
+    {
+        get { return buttonImage; }
     }
 
     public void Create(Creature owner)
@@ -193,6 +197,28 @@ public class ActionSource : MonoBehaviour
                 actionList.Add(new CastAction(actionList[actionList.Count - 1], data));
                 actionList[actionList.Count - 1].Source = this;
             }
+        }
+
+        // Create the versatile form if there is one
+        if (versatileFormPrefab != null && versatileForm == null) // There is a versatile form that has yet to be created
+        {
+            GameObject versatileFormGameObject;
+            // Instantiate the new weapon with this one
+            if (owner != null) // There is an owner
+            {
+                versatileFormGameObject = Instantiate(versatileFormPrefab, owner.gameObject.transform);
+                versatileFormGameObject.SetActive(false);
+            }
+            else // There is no owner
+            {
+                // Instantiate it at its own position
+                versatileFormGameObject = Instantiate(versatileFormPrefab, gameObject.transform.position, Quaternion.identity);
+            }
+
+            // Initialize the action source code
+            versatileForm = versatileFormGameObject.GetComponent<ActionSource>();
+            versatileForm.VersatileForm = this;
+            versatileForm.Create(owner);
         }
     }
 

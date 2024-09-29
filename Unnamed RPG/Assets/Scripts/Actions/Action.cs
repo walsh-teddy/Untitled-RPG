@@ -411,7 +411,7 @@ public class Action
             firstLine = false;
 
             // Print energy cost
-            text += "Costs " + energyCost + " energy";
+            text += energyCost + " energy";
         }
 
         if (cooldownCost > 0) // There is a cooldown cost
