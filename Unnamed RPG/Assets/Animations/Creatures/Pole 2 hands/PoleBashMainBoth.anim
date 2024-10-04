@@ -258,7 +258,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: Body/Right Hand/Weapon01/LeftHandRest/Left Hand
+    path: Body/Left Hand
   m_ScaleCurves: []
   m_FloatCurves: []
   m_PPtrCurves: []
@@ -284,7 +284,7 @@ AnimationClip:
       customType: 0
       isPPtrCurve: 0
     - serializedVersion: 2
-      path: 3442952087
+      path: 4147073985
       attribute: 1
       script: {fileID: 0}
       typeID: 4
@@ -956,7 +956,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.x
-    path: Body/Right Hand/Weapon01/LeftHandRest/Left Hand
+    path: Body/Left Hand
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -1020,7 +1020,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.y
-    path: Body/Right Hand/Weapon01/LeftHandRest/Left Hand
+    path: Body/Left Hand
     classID: 4
     script: {fileID: 0}
   - curve:
@@ -1084,7 +1084,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_LocalPosition.z
-    path: Body/Right Hand/Weapon01/LeftHandRest/Left Hand
+    path: Body/Left Hand
     classID: 4
     script: {fileID: 0}
   m_EulerEditorCurves:

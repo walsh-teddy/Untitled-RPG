@@ -14,7 +14,7 @@ public class CastAction : Action
         otherAction.Hidden = true;
         actionType = actionType.cast;
         targetType = otherAction.TargetType;
-        animationTrigger = data.castAnimationTrigger;
+        baseAnimationTrigger = data.castAnimationTrigger;
         otherAction.CastAction = this;
 
         turnsLeftToCast = castTimeCost;

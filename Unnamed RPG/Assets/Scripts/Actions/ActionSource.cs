@@ -18,7 +18,7 @@ public class ActionSource : MonoBehaviour
     [SerializeField] GameObject versatileFormPrefab;
     protected ActionSource versatileForm; // The weapon that this versatile weapon switches to
     [SerializeField] int magicLevel; // 0 for most weapons, 1-3 for magic weapons that allows for certain levels of spellcasting
-    [SerializeField] GameObject leftHandRest; // Where the left hand should hold onto the weapon (right hand uses the origin) (only use for 2 handed weapons)
+    [SerializeField] Transform leftHandRest; // Where the left hand should hold onto the weapon (right hand uses the origin) (only use for 2 handed weapons)
 
     protected int recharge = 0;
     protected bool gainedRechargeThisTurn = false;
@@ -133,7 +133,7 @@ public class ActionSource : MonoBehaviour
     {
         get { return handCount; }
     }
-    public GameObject LeftHandRest
+    public Transform LeftHandRest
     {
         get { return leftHandRest; }
     }

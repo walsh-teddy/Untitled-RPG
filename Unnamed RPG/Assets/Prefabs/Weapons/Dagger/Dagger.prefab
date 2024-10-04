@@ -213,8 +213,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Dagger
   actionDataList:
-  - {fileID: 11400000, guid: 4a0bd79793bb0d54e90ccb0dc861d08f, type: 2}
   - {fileID: 11400000, guid: 1f9a38273d944374faa1119965dd42b1, type: 2}
+  - {fileID: 11400000, guid: 4a0bd79793bb0d54e90ccb0dc861d08f, type: 2}
   - {fileID: 11400000, guid: daeba5e1d5e92074b90cb515c2f67ac3, type: 2}
   animationType: 0
   handCount: 1

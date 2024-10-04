@@ -8,6 +8,7 @@ TagManager:
   - CameraFocus
   - MainMenu
   - Interscene
+  - theVoid
   layers:
   - Default
   - TransparentFX

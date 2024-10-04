@@ -481,7 +481,6 @@ public class Creature : MonoBehaviour
             {
                 case 1: // 1 handed
                     // Decide which hand to put it in
-                    // TODO: Play an animation to move the hands to the correct spot (the default might not be enough)
                     if (rightHandOpen) // Right hand is open
                     {
                         // Create the weapon
@@ -517,7 +516,7 @@ public class Creature : MonoBehaviour
                         source.gameObject.name = "Weapon01"; // TODO: make this scale with more weapons maybe
 
                         // Attatch the left hand to the weapon
-                        leftHand.transform.parent = source.LeftHandRest.transform;
+                        leftHand.GetComponent<LeftHandTracker>().AttatchLeftHand(source.LeftHandRest);
 
                         // Move both hands to the correct positions using animations depending on if its a pole or a hilt
                         if (source.AnimationType == weaponAnimationType.hilt)

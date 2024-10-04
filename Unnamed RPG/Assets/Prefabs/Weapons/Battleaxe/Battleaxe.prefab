@@ -61,7 +61,7 @@ MonoBehaviour:
   slots: 3
   versatileFormPrefab: {fileID: 0}
   magicLevel: 0
-  leftHandRest: {fileID: 9097786110758172418}
+  leftHandRest: {fileID: 9125571615859549433}
 --- !u!1 &7315490933030580506
 GameObject:
   m_ObjectHideFlags: 0

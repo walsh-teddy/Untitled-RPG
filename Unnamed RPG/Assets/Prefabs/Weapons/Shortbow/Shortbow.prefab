@@ -55,11 +55,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 55e61260e4aac7848b2073d442b096ae, type: 2}
   animationType: 3
   handCount: 2
+  buttonImage: {fileID: 0}
   weaponType: 4
   slots: 3
-  versatileForm: {fileID: 0}
+  versatileFormPrefab: {fileID: 0}
   magicLevel: 0
-  leftHandRest: {fileID: 4510440449523355333}
+  leftHandRest: {fileID: 1652412549393898240}
 --- !u!1 &4510440449523355333
 GameObject:
   m_ObjectHideFlags: 0

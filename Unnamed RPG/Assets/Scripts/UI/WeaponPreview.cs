@@ -8,17 +8,22 @@ using TMPro;
 public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     // Prefab's game objects
-    [Header("GameObjects")]
+    [Header("References")]
     [SerializeField] TextMeshProUGUI text;
-    [SerializeField] GameObject displays;
-    [SerializeField] SourceDisplayBox sourceDisplay;
-    [SerializeField] Transform actionDisplays;
     [SerializeField] Button versatileButton;
+    [SerializeField] Transform popoutAnchor;
+
+    PopoutBox popoutBox;
+
+    //[SerializeField] GameObject displays;
+    //[SerializeField] SourceDisplayBox sourceDisplay;
+    //[SerializeField] Transform actionDisplays;
 
 
     // Prefabs to be instantiated
     [Header("Prefabs")]
     [SerializeField] GameObject ActionDisplayBoxPrefab;
+    [SerializeField] GameObject PopoutBoxPrefab;
 
     // Cached references
     ActionSource source;
@@ -40,9 +45,14 @@ public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         get { return source; }
     }
+    public Transform PopoutAnchor
+    {
+        get { return popoutAnchor; }
+    }
 
     public void Create(ActionSource source, CharacterCreationManager manager, float spacing, bool isSelected)
     {
+        // Cache values
         this.source = source;
         this.manager = manager;
         this.isSelected = isSelected;
@@ -50,24 +60,9 @@ public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         text.text = source.DisplayName;
 
         // Initialize the source display box
-        sourceDisplay.Create(source);
-
-        // Create a action display for each action
-        foreach (Action action in source.ActionList)
-        {
-            // Don't create a display for cast actions
-            if (action.ActionType == actionType.cast) // This one is a cast action
-            {
-                // Skip this action
-                continue;
-            }
-
-            // Create the display and initialize its data
-            ActionDisplayBox actionDisplay = Instantiate(ActionDisplayBoxPrefab, actionDisplays).GetComponent<ActionDisplayBox>();
-            actionDisplay.Create(action);
-        }
-
-        displays.SetActive(false);
+        popoutBox = GameObject.Instantiate(PopoutBoxPrefab, GameObject.FindGameObjectWithTag("theVoid").transform).GetComponent<PopoutBox>();
+        popoutBox.Create(this);
+        //sourceDisplay.Create(source);
 
         // Update the width of the box (should be wider if its 2 or 3 slots)
         if (source.Slots > 1)
@@ -87,7 +82,7 @@ public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             // Set the background to an image, and not show text
             gameObject.GetComponent<Image>().sprite = source.ButtonImage;
-            text.text = "";
+            text.gameObject.SetActive(false);
         }
     }
 
@@ -107,19 +102,22 @@ public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnPointerEnter(PointerEventData pointerEventData)
     {
-        displays.SetActive(true);
+        // TODO: Make the pointer ignore the popout box
+        popoutBox.TurnOn();
     }
 
     public void OnPointerExit(PointerEventData pointerEventData)
     {
-        displays.SetActive(false);
+        HidePopout();
+    }
+
+    public void HidePopout()
+    {
+        popoutBox.TurnOff();
     }
 
     public void ButtonPressed()
     {
-        // Add or remove the source from the list
-        Debug.Log("ButtonPressed() called");
-
         // Add or remove the weapon from the selected weapons list
         if (isSelected) // This is already selected
         {
@@ -143,5 +141,13 @@ public class WeaponPreview : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             gameObject.SetActive(false);
             versatileForm.gameObject.SetActive(true);
         }
+    }
+
+    // Destructor
+    public void Delete()
+    {
+        // Delete both the popoutBox and this
+        GameObject.Destroy(popoutBox.gameObject);
+        GameObject.Destroy(gameObject);
     }
 }

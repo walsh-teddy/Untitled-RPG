@@ -209,7 +209,7 @@ public class AOEAttack : Attack
                 text += (int)aoeReach + " tile circle. " + (int)range + " tile range. ";
                 if (circleCenterIgnoreLineOfSight)
                 {
-                    text += "Circle center ignores line of sight. ";
+                    text += "Target ignores line of sight. ";
                 }
                 break;
 

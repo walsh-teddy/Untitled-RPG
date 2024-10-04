@@ -36,7 +36,7 @@ public class Action
     protected targetTypes targetType = targetTypes.none; // How it should display targets when this action is selected
 
     // Animation
-    protected string animationTrigger;
+    protected string baseAnimationTrigger;
     protected GameObject projectilePrefab;
 
     // UI
@@ -86,17 +86,15 @@ public class Action
     public virtual ActionSource Source
     {
         get { return source; }
-        set
-        {
-            source = value;
-
-            // Update the animationTrigger to include how the weapon is being held
-            if (source.HeldHand != hand.None)
-            {
-                animationTrigger = source.AnimationType + animationTrigger + source.HeldHand;
-            }
-        }
-
+        set { source = value; }
+    }
+    public virtual string AnimationTrigger
+    {
+        get { return source.AnimationType + baseAnimationTrigger + source.HeldHand; }
+    }
+    public string BaseAnimationTrigger
+    {
+        get { return baseAnimationTrigger; }
     }
     public List<Tile> Targets
     {
@@ -232,7 +230,7 @@ public class Action
         castTimeCost = data.castTimeCost;
         phase = data.phase;
         isMinorAction = data.isMinorAction;
-        animationTrigger = data.animationTrigger;
+        baseAnimationTrigger = data.animationTrigger;
         buttonImage = data.buttonImage;
 
 
@@ -279,8 +277,7 @@ public class Action
 
     public virtual void PlayAnimation()
     {
-        //Debug.Log(displayName + " playing animation: \"" + animationTrigger + "\"");
-        source.Owner.AnimationController.SetTrigger(animationTrigger);
+        source.Owner.AnimationController.Play(AnimationTrigger);
     }
 
     public virtual void EndTurn()

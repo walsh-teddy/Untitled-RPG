@@ -293,6 +293,7 @@ public class Move : Action
         // Test if its too high
         if (target.Height - current.Height > source.Owner.StepHeight)
         {
+            // TODO: Have the weight that height difference adds to tiles be based on the creature. It should be [(target.Height - current.Height) / StepHeight] so if someone has a step height of 3, they can go up most hills without being impeeded
             //Debug.Log("Illegal move. Too high of a step");
             return false;
         }
