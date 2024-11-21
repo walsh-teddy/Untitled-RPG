@@ -178,7 +178,7 @@ GameObject:
   - component: {fileID: 1248379792612717128}
   m_Layer: 0
   m_Name: Rapier
-  m_TagString: Untagged
+  m_TagString: actionSource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -222,9 +222,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dcfa14548bea6b04695bea8704e9e166, type: 2}
   animationType: 0
   handCount: 1
+  buttonImage: {fileID: 0}
   weaponType: 2
   slots: 2
-  versatileForm: {fileID: 0}
+  versatileFormPrefab: {fileID: 0}
   magicLevel: 0
   leftHandRest: {fileID: 0}
 --- !u!1 &6392919496597419331

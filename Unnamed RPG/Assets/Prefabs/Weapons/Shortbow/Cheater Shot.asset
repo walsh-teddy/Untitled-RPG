@@ -13,10 +13,13 @@ MonoBehaviour:
   m_Name: Cheater Shot
   m_EditorClassIdentifier: 
   displayName: Cheater Shot
-  animationTrigger: shoot
+  animationTrigger: Shoot
   castAnimationTrigger: 
+  projectilePrefab: {fileID: 7362788692324581475, guid: 9c477def5e9f49c4a9d5c759299fae07, type: 3}
+  buttonImage: {fileID: 0}
   phase: 3
-  isMinorAction: 0
+  magicLevel: 0
+  isMinorAction: 1
   cooldownCost: 0
   rechargeCost: 0
   energyCost: 3
@@ -29,5 +32,4 @@ MonoBehaviour:
   range: 10
   closeRange: 1
   ignoreLineOfSight: 1
-  projectilePrefab: {fileID: 7362788692324581475, guid: 9c477def5e9f49c4a9d5c759299fae07, type: 3}
   extraEffects: 05000000

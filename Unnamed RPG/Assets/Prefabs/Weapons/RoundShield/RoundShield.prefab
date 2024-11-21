@@ -178,7 +178,7 @@ GameObject:
   - component: {fileID: 4912980251459489604}
   m_Layer: 0
   m_Name: RoundShield
-  m_TagString: Untagged
+  m_TagString: actionSource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -217,9 +217,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a4490579ac6de774585f7768f19a6029, type: 2}
   animationType: 2
   handCount: 1
+  buttonImage: {fileID: 0}
   weaponType: 3
   slots: 1
-  versatileForm: {fileID: 0}
+  versatileFormPrefab: {fileID: 0}
   magicLevel: 0
   leftHandRest: {fileID: 0}
 --- !u!1 &5500529564176728146

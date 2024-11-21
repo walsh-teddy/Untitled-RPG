@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10d1c5ea2bea46340aa65442215fb040, type: 3}
+  m_Name: Super Tough
+  m_EditorClassIdentifier: 
+  abilityEnum: 1
+  displayName: Super Tough
+  description: Gain EVEN MORE health >:)
+  sprite: {fileID: 0}
+  requierment: {fileID: 11400000, guid: 40d41997483d2484ca7233350918a35a, type: 2}
+  statBuffs:
+  - stat: 1
+    ammount: 2
+  - stat: 10
+    ammount: 3

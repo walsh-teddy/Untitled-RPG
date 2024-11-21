@@ -13,10 +13,13 @@ MonoBehaviour:
   m_Name: Shoot
   m_EditorClassIdentifier: 
   displayName: Shoot
-  animationTrigger: shoot
-  isMinorAction: 0
+  animationTrigger: Shoot
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 7362788692324581475, guid: 9c477def5e9f49c4a9d5c759299fae07, type: 3}
+  buttonImage: {fileID: 0}
   phase: 3
-  actionType: 1
+  magicLevel: 0
+  isMinorAction: 0
   cooldownCost: 0
   rechargeCost: 0
   energyCost: 2
@@ -28,5 +31,5 @@ MonoBehaviour:
   damage: 3
   range: 10
   closeRange: 1
-  projectilePrefab: {fileID: 7362788692324581475, guid: 9c477def5e9f49c4a9d5c759299fae07, type: 3}
+  ignoreLineOfSight: 0
   extraEffects: 05000000

@@ -24,7 +24,7 @@ public class Move : Action
     List<CheckedTile> foundPath = new List<CheckedTile> { };
     CheckedTile currentCheckedTile;
 
-    // Used for external collision calculations in Game.cs
+    // Used for external collision calculations in Game.cs (as well as animations)
     Tile currentMoveToTile; // The tile the move is moving to this step
     Tile previousMoveToTile; // The tile the move moved to last step
 
@@ -135,8 +135,10 @@ public class Move : Action
         else if (chasing && !moveFinished && source.Owner.MovingThisPhase) // Chasing
         {
             // Look to the next tile in the pathfinding, and update currentChaseLength
+            // TODO: Maybe make this use PlannedMovementAtStep() instead of their current space
             Tile nextStep = Chase(creatureTargets[0].Space);
 
+            // Check if this creature should keep chasing or if its done
             if ((int)currentChaseLength <= speed && nextStep != null) // This can go further and target is reachable
             {
                 // Don't do anything if this would collide with the target
@@ -149,7 +151,7 @@ public class Move : Action
                     }
                     else // This is the first time this move has had to pause
                     {
-                        Debug.Log(source.Owner.DisplayName + " " + displayName + " would collide with target. Pausing for 1 step");
+                        Debug.Log("<color=green>" + source.Owner.DisplayName + " " + displayName + " would collide with target. Pausing for 1 step</color>");
                         // Don't update currentMoveToTile
                         // Pause for 1 step 
                         pausedLastStep = true;
@@ -182,10 +184,10 @@ public class Move : Action
         // Tell the owner to move to this tile
         source.Owner.StartMove(currentMoveToTile);
 
-        if (currentMoveToTile != source.Owner.Space) // The move is going somewhere new
+        if (currentMoveToTile != origin) // The move is going somewhere new
         {
             // Play the actual animation
-            base.PlayAnimation();
+            base.PlayAnimation(baseAnimationTrigger);
         }
 
         // Incriment the index up to the next tile (mainly used for non-chasing, but doing this in both cases for saftey)
@@ -343,7 +345,7 @@ public class Move : Action
         }
         else // Is chasing. Always start from the owner's position
         {
-            openList.Add(new CheckedTile(source.Owner.Space, null, 0, 1));
+            openList.Add(new CheckedTile(origin, null, 0, 1));
         }
 
         // Loop until every possible tile has been checked
@@ -475,9 +477,11 @@ public class Move : Action
             speed = source.Owner.Speed + source.Owner.ExpectedStatIncrease(buffableCreatureStats.speed) + speedChange;
         }
 
-        if (targets.Count == 0)
+        // If only the default information exists, reset targets (the starting position (origin) might have changed from another action)
+        if (targets.Count <= 1)
         {
-            targets.Add(source.Owner.Space);
+            targets.Clear();
+            targets.Add(origin);
         }
     }
 
@@ -489,7 +493,7 @@ public class Move : Action
         // Add the tile the player is standing on as the first tile in targets, if
         if (!targetsLocked)
         {
-            targets.Add(source.Owner.Space);
+            targets.Add(origin);
             currentMoveLength = 0;
         }
 
@@ -506,8 +510,8 @@ public class Move : Action
         moveFinished = false;
         pausedLastStep = false;
 
-        currentMoveToTile = source.Owner.Space;
-        previousMoveToTile = source.Owner.Space;
+        currentMoveToTile = origin;
+        previousMoveToTile = origin;
     }
 
     public override string FormatDescription()
@@ -574,6 +578,7 @@ public class Move : Action
 
         // Add the starting tile to openList (with the constructor that estimates a cost to get to the target tile)
         // Also start this with currentChaseLength, which is only used in chasing
+        // This one does use the owner's current space since it is updated after each step
         currentCheckedTile = new CheckedTile(source.Owner.Space, null, 0, 1, targetTile);
 
         // Add the imedaite connections from the starting tile, and only consider them if they are within range.

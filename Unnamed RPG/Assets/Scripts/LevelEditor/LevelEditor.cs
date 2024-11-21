@@ -19,11 +19,11 @@ public class LevelEditor : LevelSpawner
     // TODO: Get rid of these
     public Tile BasicTile
     {
-        get { return tilePrefabDic["Grass"].GetComponent<Tile>(); }
+        get { return prefabContainer.TilePrefabs["Grass"].GetComponent<Tile>(); }
     }
     public Tile SlowTile
     {
-        get { return tilePrefabDic["Mud"].GetComponent<Tile>(); }
+        get { return prefabContainer.TilePrefabs["Mud"].GetComponent<Tile>(); }
     }
 
     protected override void CalculateMapEdges()
@@ -45,7 +45,8 @@ public class LevelEditor : LevelSpawner
             for (int y = 0; y < mapHeight; y++)
             {
                 // Create a tile at height = 0
-                map[x, y] = Instantiate(tilePrefabList[0], new Vector3(x * tileSize, 0, y * tileSize), Quaternion.identity).GetComponent<Tile>();
+                // TODO: Allow for a different default tile prefab probably
+                map[x, y] = Instantiate(prefabContainer.TilePrefabs["Grass"], new Vector3(x * tileSize, 0, y * tileSize), Quaternion.identity).GetComponent<Tile>();
                 map[x, y].Create(x, y, 0);
             }
         }

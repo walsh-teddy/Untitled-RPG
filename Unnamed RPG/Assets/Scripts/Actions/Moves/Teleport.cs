@@ -21,7 +21,7 @@ public class Teleport : Move
         possibleTargets.Clear();
 
         // Get a list of every tile within range of the teleport
-        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, 1);
+        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, source.Owner.EyeHeight, 0, true);
         // Only add targets in line of sight if thats required
         if (!ignoreLineOfSight) // This teleport needs line of sight
         {

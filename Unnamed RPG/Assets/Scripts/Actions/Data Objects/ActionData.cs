@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/ActionData", order = 1)]
+[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/Actions/ActionData", order = 1)]
 public class ActionData : ScriptableObject
 {
     [Header("Costmetic")]
@@ -14,7 +14,8 @@ public class ActionData : ScriptableObject
     public Sprite buttonImage;
 
     [Header("Other Action data")]
-    public phase phase;
+    public phase phase = phase.Prep;
+    public int magicLevel;
 
     [Header("Costs")]
     public bool isMinorAction;

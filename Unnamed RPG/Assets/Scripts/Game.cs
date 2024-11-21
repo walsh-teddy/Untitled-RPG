@@ -159,6 +159,36 @@ public class Game : MonoBehaviour
     {
         // Add the action to a list
         actionStack.Add(action);
+
+        // TODO: Delete this
+        //PrintSubmittedActions();
+    }
+    public void UnsubmitAction(Action action)
+    {
+        // Make sure this action is actually submitted
+        if (actionStack.Contains(action)) // This action has been submitted
+        {
+            // Remove it
+            actionStack.Remove(action);
+
+            // TODO: Delete this
+            //PrintSubmittedActions();
+        }
+        else // This action has not been submitted (something has gone wrong)
+        {
+            Debug.LogError("UnsubmitAction() called on invalid action");
+        }
+    }
+    protected void PrintSubmittedActions()
+    {
+        string printMessage = "Total submitted actions: ";
+
+        foreach (Action action in actionStack)
+        {
+            printMessage += action.DisplayName + ", ";
+        }
+
+        Debug.Log(printMessage);
     }
 
     public void TeamReady()
@@ -187,7 +217,7 @@ public class Game : MonoBehaviour
         UpdateCurrentPhase();
 
         // Start the next phase
-        Debug.Log(string.Format("Phase Start: {0}", currentPhase));
+        Debug.Log(string.Format("<color=yellow>Phase Start: {0}</color>", currentPhase));
 
         // Update lists of actions for this phase
         UpdateActionLists();

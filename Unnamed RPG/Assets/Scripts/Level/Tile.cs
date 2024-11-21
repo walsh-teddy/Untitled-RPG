@@ -26,6 +26,8 @@ public class Tile : MonoBehaviour
     [SerializeField] MeshRenderer mediumHighlightPlane;
     [SerializeField] MeshRenderer heavyHighlightPlane;
 
+    const float DEFAULT_CHARACTER_HEIGHT = 2;
+
     Obstacle obstacle;
     Creature occupant;
     LevelSpawner levelSpawner;
@@ -108,6 +110,28 @@ public class Tile : MonoBehaviour
     {
         get { return height; }
     }
+    public float BlockHeight // The height that this blocks line of sight 
+    {
+        get
+        {
+            // Check if there is anything that would make the tile taller
+            if (HasObstacle) // There is an obstacle in the way
+            {
+                return height + obstacle.Height;
+            }
+            else if (HasOccupant) // There is a creature there
+            {
+                // TODO: Check if the creature blocks line of sight
+                /*if (occupant.blocksSight) { }*/
+                // Or maybe actually don't since this is accounted for in LevelSpawner.HasLineOfSight() with ignoreCreatures.
+                return height;
+            }
+            else // There is nothing in it
+            {
+                return height;
+            }
+        }
+    }
     public float TopHeight
     {
         // Return the tallest point on the tile (either its base or the top point of anything thats in it)
@@ -124,6 +148,22 @@ public class Tile : MonoBehaviour
             else // It is empty
             {
                 return height;
+            }
+        }
+    }
+    public float TargetHeight // The height of a possible target on this tile
+    {
+        get
+        {
+            if (HasOccupant) // Someone is on the tile
+            {
+                // Return their height
+                return height + occupant.Height;
+            }
+            else // Nobody is on the tile (it could have an obstacle)
+            {
+                // Return the height as if there was a 2 M tall person there
+                return height + DEFAULT_CHARACTER_HEIGHT;
             }
         }
     }
@@ -174,11 +214,13 @@ public class Tile : MonoBehaviour
                 // Moving diagonally costs more
                 length += 0.5f;
             }
+
+            // TODO: Let this be determined in Move.cs so the increased weight is proportional to the subject's stepHeight (stepping up 3 tiles as someone with 
             // Check if its higher
             if (tile.Height > height) // The new tile is higher
             {
                 // Add half the height difference as length 
-                length += 0.5f* (tile.Height - height);
+                length += 0.5f * (tile.Height - height);
             }
             connections.Add(new TileConnection(tile, length));
         }

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4912980251459489604}
   m_Layer: 0
   m_Name: Self
-  m_TagString: Untagged
+  m_TagString: actionSource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -54,8 +54,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 550c2d363dbcabc4998cba012873322f, type: 2}
   animationType: 4
   handCount: 0
+  buttonImage: {fileID: 0}
   weaponType: 6
   slots: 0
-  versatileForm: {fileID: 0}
+  versatileFormPrefab: {fileID: 0}
   magicLevel: 0
   leftHandRest: {fileID: 0}

@@ -76,6 +76,8 @@ MonoBehaviour:
   leftHand: {fileID: 0}
   prefabInventory:
   - {fileID: 1702456656628872110, guid: a13435e52a3f5d54b8cbee4766e45d0c, type: 3}
+  abilities: 
+  actionAbilitySourcePrefab: {fileID: 1702456656628872110, guid: cd66c05a3b5068140af61305333e6771, type: 3}
   strength: 1
   dexterity: 1
   intellect: 0
@@ -90,8 +92,6 @@ MonoBehaviour:
   energyBarSlider: {fileID: 1635193949958563590}
   energyBarText: {fileID: 7172126703329192618}
   floatingText: {fileID: 1908109792492554409}
-  percentageBetweenTiles: 0
-  playingMoveAnimation: 0
   agressiveHealthThreshhold: 0
   preferedAgressiveDistance: 0
   preferedDefensiveDistance: 0

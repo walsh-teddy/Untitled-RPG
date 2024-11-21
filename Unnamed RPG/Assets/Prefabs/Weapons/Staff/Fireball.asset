@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Fireball
   animationTrigger: NoAnimationYetSadFace
-  isMinorAction: 0
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 0}
+  buttonImage: {fileID: 0}
   phase: 3
-  actionType: 3
+  magicLevel: 3
+  isMinorAction: 0
   cooldownCost: 2
   rechargeCost: 1
   energyCost: 2
@@ -28,9 +31,11 @@ MonoBehaviour:
   damage: 3
   range: 7
   closeRange: -1
-  projectilePrefab: {fileID: 0}
+  ignoreLineOfSight: 0
   extraEffects: 
   aoeType: 1
   aoeReach: 3
   aoeAngle: 0
   aoeHeight: 1
+  circleCenterIgnoreLineOfSight: 0
+  canBeBlockedByMelee: 0

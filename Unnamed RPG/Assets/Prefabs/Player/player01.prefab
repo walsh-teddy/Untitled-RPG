@@ -113,6 +113,8 @@ GameObject:
   - component: {fileID: 7015818348708862751}
   - component: {fileID: 4342333791435128715}
   - component: {fileID: 1653775552501360824}
+  - component: {fileID: 6714481909949952910}
+  - component: {fileID: 3798986401793348942}
   m_Layer: 7
   m_Name: Left Hand
   m_TagString: Untagged
@@ -128,7 +130,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2689349267588326565}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.74999994, y: 0.79478264, z: 0.6199999}
+  m_LocalPosition: {x: 0.74999994, y: 0.7947827, z: 0.6199998}
   m_LocalScale: {x: 0.3569005, y: 0.39569452, z: 0.3569005}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -198,6 +200,45 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1773428102 &6714481909949952910
+ParentConstraint:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2689349267588326565}
+  m_Enabled: 1
+  m_Weight: 1
+  m_TranslationAtRest: {x: 0.7500001, y: 0.7947827, z: 0.6199998}
+  m_RotationAtRest: {x: 0, y: 0, z: 0}
+  m_TranslationOffsets:
+  - {x: 0, y: 0, z: 0}
+  m_RotationOffsets:
+  - {x: 0, y: 0, z: 0}
+  m_AffectTranslationX: 1
+  m_AffectTranslationY: 1
+  m_AffectTranslationZ: 1
+  m_AffectRotationX: 1
+  m_AffectRotationY: 1
+  m_AffectRotationZ: 1
+  m_IsContraintActive: 1
+  m_IsLocked: 1
+  m_Sources:
+  - sourceTransform: {fileID: 8310715389421990578}
+    weight: 1
+--- !u!114 &3798986401793348942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2689349267588326565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acdb869d131801d459a54e3553a6ce6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parentConstraint: {fileID: 6714481909949952910}
 --- !u!1 &3187343870214836086
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,7 +316,11 @@ MonoBehaviour:
   leftHand: {fileID: 2689349267588326565}
   prefabInventory:
   - {fileID: 1702456656628872110, guid: a13435e52a3f5d54b8cbee4766e45d0c, type: 3}
-  - {fileID: 2691190363056632325, guid: 8a433b0fe27125d40bd9d2f78d1c0bab, type: 3}
+  - {fileID: 2691190363056632325, guid: 6def5ac01233d2543bc3566a694c5257, type: 3}
+  abilities:
+  - {fileID: 11400000, guid: 6427dee4e3f5bb44e9b0dd272a0c1034, type: 2}
+  - {fileID: 11400000, guid: 093b31cac3fe0f34182ba476b3bf3b54, type: 2}
+  actionAbilitySourcePrefab: {fileID: 1702456656628872110, guid: cd66c05a3b5068140af61305333e6771, type: 3}
   strength: 2
   dexterity: 1
   intellect: 0

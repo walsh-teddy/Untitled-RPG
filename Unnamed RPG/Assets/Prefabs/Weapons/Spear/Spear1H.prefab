@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6980407149530252152}
   m_Layer: 0
   m_Name: Spear1H
-  m_TagString: Untagged
+  m_TagString: actionSource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -52,6 +52,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2621e490482c0af48bfecc12cf4d3a67, type: 2}
   animationType: 1
   handCount: 1
+  buttonImage: {fileID: 0}
   weaponType: 0
   slots: 2
   versatileFormPrefab: {fileID: 2691190363056632325, guid: 78f83a11abc236d47821579573e8a84e, type: 3}

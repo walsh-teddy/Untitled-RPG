@@ -86,3 +86,10 @@ public enum DetailType
     Player,
     Enemy,
 }
+
+/*public enum Abilities
+{
+    Tough,
+    SuperTough,
+    HealingWind,
+}*/

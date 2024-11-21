@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Fire Bolt
   animationTrigger: ThisDoesn'tHaveAnAnimationYetHehehaha
-  isMinorAction: 0
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 477348837139434572, guid: a65ceaad58c8bec469a7fbdf8e21c441, type: 3}
+  buttonImage: {fileID: 0}
   phase: 3
-  actionType: 1
+  magicLevel: 1
+  isMinorAction: 0
   cooldownCost: 1
   rechargeCost: 0
   energyCost: 1
@@ -28,5 +31,5 @@ MonoBehaviour:
   damage: 2
   range: 7
   closeRange: 2
-  projectilePrefab: {fileID: 477348837139434572, guid: a65ceaad58c8bec469a7fbdf8e21c441, type: 3}
+  ignoreLineOfSight: 0
   extraEffects: 

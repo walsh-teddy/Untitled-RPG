@@ -13,6 +13,7 @@ public class Action
     protected string displayName;
     protected ActionSource source;
     protected actionType actionType; // Is the action an attack, move, aoe, or buff
+    protected int magicLevel;
 
     // Costs
     protected int cooldown;
@@ -45,6 +46,7 @@ public class Action
     protected bool displayCastingTime = false;
     protected GameObject uiRoot;
     protected Sprite buttonImage;
+    protected uiUndoButton undoButton;
 
     // Casting
     protected CastAction castAction; // Only not-null if castTimeCost > 0 (the action that is called every turn it is cast instead of the actual action)
@@ -136,7 +138,13 @@ public class Action
                 playable = false;
             }
 
-            // Loop through each action already submitted by this creature
+            // Test if the owner has the right magic level
+            else if (source.Owner.MagicLevel < magicLevel)
+            {
+                playable = false;
+            }
+
+            // Check if theres another action submitted this phase
             foreach (Action action in source.Owner.SubmittedActions)
             {
                 // Test if theres a non-minor action submitted
@@ -146,7 +154,7 @@ public class Action
                 }
 
                 // Test if this action is in the same phase
-                if (action.phase == phase) // they are both in the same phase
+                else if (action.phase == phase) // they are both in the same phase
                 {
                     playable = false;
                 }
@@ -201,6 +209,15 @@ public class Action
     {
         get { return buttonImage; }
     }
+    public int MagicLevel
+    {
+        get { return magicLevel; }
+    }
+    public uiUndoButton UndoButton
+    {
+        get { return undoButton; }
+        set { undoButton = value; }
+    }
 
 
     // -=-=-=-= OVERRIDEN PROPERTIES =-=-=-=-
@@ -232,7 +249,7 @@ public class Action
         isMinorAction = data.isMinorAction;
         baseAnimationTrigger = data.animationTrigger;
         buttonImage = data.buttonImage;
-
+        magicLevel = data.magicLevel;
 
         if (data.projectilePrefab != null) // It has a projectile
         {
@@ -277,7 +294,13 @@ public class Action
 
     public virtual void PlayAnimation()
     {
-        source.Owner.AnimationController.Play(AnimationTrigger);
+        PlayAnimation(AnimationTrigger);
+    }
+
+    public virtual void PlayAnimation(string animationTrigger)
+    {
+        //Debug.Log(source.Owner.name + " Playing " + animationTrigger);
+        source.Owner.AnimationController.Play(animationTrigger);
     }
 
     public virtual void EndTurn()
@@ -294,7 +317,7 @@ public class Action
 
         // Reset the origin
         // TODO: This was originally only called if originatesFromAttacker was true, but now thats only in attack.cs so this may cause issues
-        origin = source.Owner.Space;
+        origin = source.Owner.PlannedSpaceAtPhase(phase);
 
         // Clear targets from this round
         Discard();
@@ -320,11 +343,8 @@ public class Action
     // Initialize nescesary variables for the action to look at possible targets
     public virtual void SetUpVariables()
     {
-        // If this is the first time this has been called, set the origin to the player's space
-        if (origin == null)
-        {
-            origin = source.Owner.Space;
-        }
+        // Set the origin to be where the creature will be standing when the action is performed
+        origin = source.Owner.PlannedSpaceAtPhase(phase);
     }
 
     // Discard any target data that was stored
@@ -556,6 +576,19 @@ public class Action
             }
         }
 
+        // Test if the owner does not have high enough magic levels
+        if (magicLevel > source.Owner.MagicLevel) // Not enough magic
+        {
+            if (newLine)
+            {
+                text += "\n";
+            }
+            text += "Requires magic level " + magicLevel;
+
+            // Mark that a line has been printed
+            newLine = true;
+        }
+
         return text;
     }
     public virtual string FormatCastingTimeText()
@@ -563,7 +596,7 @@ public class Action
         return "Ready to cast!";
     }
 
-    // Change the button if the action is on cooldown
+    // Change the button if the action is on cooldown or otherwise unavailable
     public virtual void UpdateUI()
     {
         uiButton.UpdateUI();
@@ -572,5 +605,15 @@ public class Action
     public virtual void FireProjectile()
     {
         source.FireProjectile(projectilePrefab, targets[0].Occupant.Body.transform.position);
+    }
+
+    public void ClearUndoButton()
+    {
+        // Only do this if there is an undo button
+        if (undoButton != null)
+        {
+            // Unsubmit destroy the button
+            undoButton.RemoveButton();
+        }
     }
 }

@@ -30,12 +30,22 @@ public class uiUndoButton : MonoBehaviour
 
         // Update the color
         button.image.color = GameObject.FindGameObjectWithTag("GameManager").GetComponent<UIManager>().ColorByPhase(action.Phase);
+
+        // Pass this button to the action (incase the action is undone outside of pressing the button and we need to clear it)
+        action.UndoButton = this;
     }
 
     private void ButtonClicked()
     {
         action.Source.Owner.UnSubmitAction(action);
         action.Source.Owner.UpdateUI(); // Update the UI (so the buttons show that some actions are now available again)
+        RemoveButton();
+    }
+
+    // In a seperate public function so Action.ClearUndoButton() can call this
+    public void RemoveButton()
+    {
+        action.UndoButton = null;
         Destroy(gameObject);
     }
 }

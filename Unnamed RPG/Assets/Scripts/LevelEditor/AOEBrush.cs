@@ -54,6 +54,6 @@ public class AOEBrush : AOEAttack
         origin = aoeTargetTile;
 
         // Get every tile within range of the explosion
-        possibleTargets = levelEditor.TilesInRange(origin, aoeReach, 0);
+        possibleTargets = levelEditor.TilesInRange(origin, aoeReach, 0, 0, false);
     }
 }

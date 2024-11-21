@@ -114,7 +114,7 @@ public class AOEAttack : Attack
         if (aoeType == aoeTypes.circle)
         {
             // Get all spaces within range
-            possibleSpaces = source.LevelSpawnerRef.TilesInRange(source.Owner, range + 0.5f, 0);
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(source.Owner, range + 0.5f, 1, false);
             if (!circleCenterIgnoreLineOfSight) // The center of the target needs line of sight
             {
                 possibleSpaces = possibleSpaces = source.LevelSpawnerRef.LineOfSight(possibleSpaces, source.Owner, true);
@@ -141,7 +141,7 @@ public class AOEAttack : Attack
                 origin = aoeTargetTile;
 
                 // Get every tile within range of the explosion
-                possibleTargets = source.LevelSpawnerRef.TilesInRange(origin, aoeReach, -1);
+                possibleTargets = source.LevelSpawnerRef.TilesInRange(origin, aoeReach, aoeHeight, 0, true);
                 if (!ignoreLineOfSight) // The explosion needs line of sight
                 {
                     possibleTargets = source.LevelSpawnerRef.LineOfSight(possibleTargets, origin, true);

@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5382822932470694564
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8269172626322455622}
+  - component: {fileID: 8916085110545267913}
+  m_Layer: 0
+  m_Name: PrefabContainer
+  m_TagString: prefabContainer
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8269172626322455622
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5382822932470694564}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8916085110545267913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5382822932470694564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fc240de980f51341b70bbbeef5c52e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _weaponPrefabList:
+  - {fileID: 2691190363056632325, guid: 8a433b0fe27125d40bd9d2f78d1c0bab, type: 3}
+  - {fileID: 1702456656628872110, guid: 4d97a544d583e084099efee2b540489d, type: 3}
+  - {fileID: 2691190363056632325, guid: 1bb6521913bda2c44924e15775005a24, type: 3}
+  - {fileID: 2691190363056632325, guid: f6b649a5aaccc1b4da713e8ec7659767, type: 3}
+  - {fileID: 2691190363056632325, guid: 0257325d4f089ed4987d6180dab26967, type: 3}
+  - {fileID: 2691190363056632325, guid: 2e14560790e03504daedf24e1e349100, type: 3}
+  - {fileID: 1702456656628872110, guid: a0b10192f64b925459d543185f105998, type: 3}
+  - {fileID: 2691190363056632325, guid: 6def5ac01233d2543bc3566a694c5257, type: 3}
+  - {fileID: 2691190363056632325, guid: 18dea91dbc422dc4997fdf07c3f64db6, type: 3}
+  - {fileID: 2691190363056632325, guid: 78f83a11abc236d47821579573e8a84e, type: 3}
+  - {fileID: 2691190363056632325, guid: c06b853bca951a04eb82a43d572a9db3, type: 3}
+  - {fileID: 1702456656628872110, guid: 258a87124022f124a9a6c8f8342576f2, type: 3}
+  _tilePrefabList:
+  - {fileID: 1345406498252121027, guid: 378de4140d33bed4693c899a86bedefc, type: 3}
+  - {fileID: 1345406498252121027, guid: 78fedbde730d7eb4f95312ac5c465833, type: 3}
+  - {fileID: 1345406498252121027, guid: b33d67fb96adfc945910a96394acb97c, type: 3}
+  _obstaclePrefabList:
+  - {fileID: 1559032785381011979, guid: 6c3c4ffbeeadedb41a3ae9648f8e76ee, type: 3}
+  _playerPrefabList:
+  - {fileID: 3187343870214836086, guid: a1109eddb245d8642aeae5de22f578db, type: 3}
+  - {fileID: 3187343870214836086, guid: c0dbf93f69b031c4c863c8d16677a7ed, type: 3}
+  - {fileID: 3187343870214836086, guid: 58c830575143a96489f2ed2a49d5ba3a, type: 3}
+  - {fileID: 3187343870214836086, guid: 99de1020be2c3764c929ac0ab857cd96, type: 3}
+  _enemyPrefabList:
+  - {fileID: 1628694780693302027, guid: 45b4636b078f9f341848f500bec44c35, type: 3}
+  _abilityDataList:
+  - {fileID: 11400000, guid: 40d41997483d2484ca7233350918a35a, type: 2}
+  - {fileID: 11400000, guid: 6427dee4e3f5bb44e9b0dd272a0c1034, type: 2}
+  - {fileID: 11400000, guid: 093b31cac3fe0f34182ba476b3bf3b54, type: 2}

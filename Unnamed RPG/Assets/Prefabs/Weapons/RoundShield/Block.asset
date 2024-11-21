@@ -14,24 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Block
   animationTrigger: Block
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 0}
+  buttonImage: {fileID: 0}
   phase: 3
+  magicLevel: 0
   isMinorAction: 0
-  cooldownCost: 0
-  rechargeCost: 1
+  cooldownCost: 1
+  rechargeCost: 0
   energyCost: 1
   castTimeCost: 0
-  hitBonusBase: 8
-  hitBonusScale: 00000000
+  hitBonusBase: 4
+  hitBonusScale: 0000000001000000
   critBonusBase: 0
   critBonusScale: 
   damage: 0
   range: 100
   closeRange: -1
   ignoreLineOfSight: 1
-  projectilePrefab: {fileID: 0}
   extraEffects: 
   aoeType: 2
   aoeReach: 100
   aoeAngle: 90
   aoeHeight: 0
   circleCenterIgnoreLineOfSight: 0
+  canBeBlockedByMelee: 1

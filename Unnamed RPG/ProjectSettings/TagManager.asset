@@ -9,6 +9,8 @@ TagManager:
   - MainMenu
   - Interscene
   - theVoid
+  - actionSource
+  - prefabContainer
   layers:
   - Default
   - TransparentFX

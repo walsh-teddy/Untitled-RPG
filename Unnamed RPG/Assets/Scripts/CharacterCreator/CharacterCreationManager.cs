@@ -4,11 +4,34 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Animations;
+using System.IO;
 
 public class CharacterCreationManager : MonoBehaviour
 {
     // TODO: Maybe make this a constant somewhere and ensure that its always enforced
     [SerializeField] int spacing = 5;
+
+    [Header("Weapon Menu")]
+    [SerializeField] GameObject weaponShop;
+    [SerializeField] GameObject selectedWeaponsBox;
+    [SerializeField] Button weaponButton;
+
+    [Header("Level Menu")]
+    [SerializeField] GameObject levelScreen;
+    [SerializeField] Button levelButton;
+    [Tooltip("Should always be Str, then Dex, then Int")]
+    [SerializeField] List<Button> miusButtonList;
+    [Tooltip("Should always be Str, then Dex, then Int")]
+    [SerializeField] List<TextMeshProUGUI> statTextList;
+    [Tooltip("Should always be Str, then Dex, then Int")]
+    [SerializeField] List<Button> plusButtonList;
+    [SerializeField] TextMeshProUGUI statDescription;
+
+    [Header("Save Menu")]
+    [SerializeField] GameObject saveScreen;
+    [SerializeField] Button saveButton; // The one in the menu that you select
+    [SerializeField] TMP_InputField nameInput;
+    [SerializeField] Button saveCharacterButton; // The one you click to actually save the character
 
     [Header("Instantiation Points")]
     [SerializeField] Transform theVoid; // Where weapon instances are created outside of camera view
@@ -18,10 +41,8 @@ public class CharacterCreationManager : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] GameObject weaponPreviewPrefab;
     [SerializeField] GameObject shopTypePrefab;
-    [SerializeField] List<GameObject> weaponPrefabs;
-
-    List<WeaponPreview> selectedWeapons = new List<WeaponPreview> { };
-    int maxSlots = 3; // This might be 4 in some cases with certain abilities
+    //[SerializeField] List<GameObject> weaponPrefabs;
+    PrefabContainer prefabContainer;
 
     [Header("Player Model")]
     [SerializeField] Animator playerAnimator;
@@ -29,6 +50,46 @@ public class CharacterCreationManager : MonoBehaviour
     [SerializeField] Transform playerRightHand;
     [SerializeField] Transform playerLeftHand;
     List<GameObject> weaponsInHands = new List<GameObject> { }; // A list of the weapon models in people's hands
+
+    // Weapon Variables
+    List<WeaponPreview> selectedWeapons = new List<WeaponPreview> { };
+    int maxSlots = 3; // This might be 4 in some cases with certain abilities
+
+    // Level Variables
+    int level = 3;
+    const int STATS_PER_LEVEL = 3; // How many total points can be spent on stats per level
+    const int MAX_STAT_INCREASE = 2; // The total a stat can be increased per level
+
+    // Used for the str, dex, and int buttons (so I only need 2 functions instead of 6)
+    class statButton
+    {
+        public Button minusButton;
+        public TextMeshProUGUI text;
+        public Button plusButton;
+        public stats stat;
+        int ammount;
+
+        public int Ammount
+        {
+            get { return ammount; }
+            set { ammount = value; }
+        }
+        public statButton(stats stat, Button minusButton, TextMeshProUGUI text, Button plusButton)
+        {
+            this.stat = stat;
+            this.minusButton = minusButton;
+            this.text = text;
+            this.plusButton = plusButton;
+            ammount = 0;
+        }
+    }
+    Dictionary<stats, statButton> statButtons = new Dictionary<stats, statButton> { };
+
+    private void Awake()
+    {
+        // Store the prefab container
+        prefabContainer = GameObject.FindGameObjectWithTag("prefabContainer").GetComponent<PrefabContainer>();
+    }
 
     private void Start()
     {
@@ -48,7 +109,7 @@ public class CharacterCreationManager : MonoBehaviour
             shop.text.text = weaponType.ToString();
 
             // Spawn a UI item for each weapon that is in this type
-            foreach (GameObject prefab in weaponPrefabs)
+            foreach (GameObject prefab in prefabContainer.WeaponPrefabs.Values)
             {
                 // Create an object in the weapon list if this is the correct weapon type
                 if (prefab.GetComponent<ActionSource>().WeaponType == weaponType) // This is the weapon type
@@ -79,6 +140,15 @@ public class CharacterCreationManager : MonoBehaviour
         }
 
         Canvas.ForceUpdateCanvases();
+
+        // Configure stat dictionaries
+        for (int i = 0; i <= 2; i ++)
+        {
+            statButtons.Add((stats)i, new statButton((stats)i, miusButtonList[i], statTextList[i], plusButtonList[i]));
+        }
+
+        ShowWeaponShop();
+        UpdateUI();
     }
 
     public void AddWeapon(WeaponPreview weapon)
@@ -270,5 +340,188 @@ public class CharacterCreationManager : MonoBehaviour
             //Debug.Log(animationTrigger);
             playerAnimator.Play(animationTrigger);
         }
+    }
+
+    public void HideEverything()
+    {
+        // Turn on/off different game objects
+        weaponShop.SetActive(false);
+        selectedWeaponsBox.SetActive(false);
+        levelScreen.SetActive(false);
+        saveScreen.SetActive(false);
+
+        // Adjust the buttons
+        weaponButton.interactable = true;
+        levelButton.interactable = true;
+        saveButton.interactable = true;
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    public void ShowWeaponShop()
+    {
+        HideEverything();
+
+        // Turn on different game objects
+        weaponShop.SetActive(true);
+        selectedWeaponsBox.SetActive(true);
+
+        // Adjust the button
+        weaponButton.interactable = false;
+    }
+
+    public void ShowLevelScreen()
+    {
+        HideEverything();
+
+        // Turn on different game objects
+        levelScreen.SetActive(true);
+
+        // Adjust the button
+        levelButton.interactable = false;
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    public void ShowSaveScreen()
+    {
+        HideEverything();
+
+        // Turn on different game objects
+        saveScreen.SetActive(true);
+
+        // Turn off the button
+        saveButton.interactable = false;
+
+        Canvas.ForceUpdateCanvases();
+    }
+
+    protected void UpStat(stats stat)
+    {
+        // Make sure this is not illegal
+        if (statButtons[stats.strength].Ammount + statButtons[stats.dexterity].Ammount + statButtons[stats.intellect].Ammount >= STATS_PER_LEVEL * level // Too many total stats
+            || statButtons[stat].Ammount >= MAX_STAT_INCREASE * level // Too much strength specifically
+            )
+        {
+            // Break out of the function
+            return;
+        }
+
+        // Increase the stat
+        statButtons[stat].Ammount += 1;
+
+        // TODO: Update the UI
+        UpdateUI();
+    }
+    public void UpStr()
+    {
+        UpStat(stats.strength);
+    }
+    public void UpDex()
+    {
+        UpStat(stats.dexterity);
+    }
+    public void UpInt()
+    {
+        UpStat(stats.intellect);
+    }
+
+    protected void DownStat(stats stat)
+    {
+        // Make sure its not too low already
+        if (statButtons[stat].Ammount <= 0) // Its already at the minimum
+        {
+            return;
+        }
+
+        // Decrease the stat
+        statButtons[stat].Ammount -= 1;
+
+        // Update the UI
+        UpdateUI();
+    }
+    public void DownStr()
+    {
+        DownStat(stats.strength);
+    }
+    public void DownDex()
+    {
+        DownStat(stats.dexterity);
+    }
+    public void DownInt()
+    {
+        DownStat(stats.intellect);
+    }
+
+    public void UpdateUI()
+    {
+        // Adjust the buttons and text for each stat pair
+        foreach (statButton statButton in statButtons.Values)
+        {
+            // Update the text
+            statButton.text.text = statButton.Ammount.ToString();
+
+            // Turn off the minus button if the stat is at 0
+            statButton.minusButton.interactable = (statButton.Ammount > 0);
+
+            // Turn off the plus button if the stat is at its max
+            statButton.plusButton.interactable = (
+                statButtons[stats.strength].Ammount + statButtons[stats.dexterity].Ammount + statButtons[stats.intellect].Ammount < STATS_PER_LEVEL * level // Total stats are not too high
+                && statButton.Ammount < MAX_STAT_INCREASE * level // This stat is not too high
+                );
+        }
+
+        // Update the level text
+        int pointsRemaining = STATS_PER_LEVEL * level - statButtons[stats.strength].Ammount - statButtons[stats.dexterity].Ammount - statButtons[stats.intellect].Ammount;
+        statDescription.text = 
+            "Level: " + level + "\n" +
+            "Points Left: " + (pointsRemaining) + "\n" +
+            "Max Stat: " + MAX_STAT_INCREASE * level;
+
+        TestNameChange();
+    }
+
+    public void TestNameChange()
+    {
+        // Only make the save character button clickable if there is a name
+        // TODO: Also maybe require the levels to be fully alocated and weapon slots filled and stuff
+        saveCharacterButton.interactable = nameInput.text != "";
+    }
+
+    public void SaveCharacter()
+    {
+        // Based on SaveLevel() from LevelEditor.cs
+
+        // Create the folder if there isn't one yet
+        string folder = Application.streamingAssetsPath + "/Characters/";
+        Directory.CreateDirectory(folder);
+
+        string text = ""; // Write to this text
+
+        // Add the character name
+        string characterName = nameInput.text;
+        text += characterName + "\n";
+
+        // Add the stats
+        foreach (statButton statButton in statButtons.Values)
+        {
+            text += statButton.Ammount + ",";
+        }
+        text += "\n";
+
+        // Add any weapons they have equipped
+        // TODO: Use IDs of some kind rather than display names
+        foreach (WeaponPreview weaponPreview in selectedWeapons)
+        {
+            text += weaponPreview.Source.DisplayName + ",";
+        }
+        text += "\n";
+
+        // TODO: Add selected abilities
+
+        // Save over any text that was there before
+        // TODO: Mark this file with the index of the character
+        string documentPath = folder + characterName + ".txt";
+        File.WriteAllText(documentPath, text);
     }
 }

@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Thunder Strike
   animationTrigger: Mega big spell
-  isMinorAction: 0
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 0}
+  buttonImage: {fileID: 0}
   phase: 3
-  actionType: 3
+  magicLevel: 3
+  isMinorAction: 0
   cooldownCost: 3
   rechargeCost: 1
   energyCost: 3
@@ -29,10 +32,10 @@ MonoBehaviour:
   range: 10
   closeRange: -1
   ignoreLineOfSight: 0
-  projectilePrefab: {fileID: 0}
   extraEffects: 
   aoeType: 1
   aoeReach: 1.5
   aoeAngle: 0
   aoeHeight: 10
   circleCenterIgnoreLineOfSight: 1
+  canBeBlockedByMelee: 0

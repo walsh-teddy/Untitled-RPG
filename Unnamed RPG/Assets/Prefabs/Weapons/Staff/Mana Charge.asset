@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Mana Charge
   animationTrigger: 
-  isMinorAction: 1
+  castAnimationTrigger: 
+  projectilePrefab: {fileID: 0}
+  buttonImage: {fileID: 0}
   phase: 2
-  actionType: 0
+  magicLevel: 1
+  isMinorAction: 1
   cooldownCost: 0
   rechargeCost: 0
   energyCost: 0

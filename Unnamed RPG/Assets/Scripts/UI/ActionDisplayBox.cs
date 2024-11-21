@@ -10,6 +10,8 @@ public class ActionDisplayBox : MonoBehaviour
     // Prefab objects
     [SerializeField] TextMeshProUGUI displayNameText;
     [SerializeField] TextMeshProUGUI phaseText;
+    [SerializeField] GameObject magicLevelBox;
+    [SerializeField] TextMeshProUGUI magicLevelText;
     [SerializeField] TextMeshProUGUI descriptionText;
     [SerializeField] TextMeshProUGUI costText;
     [SerializeField] GameObject innactiveBox;
@@ -27,6 +29,11 @@ public class ActionDisplayBox : MonoBehaviour
         // Update the text of the display text box
         displayNameText.text = action.DisplayName;
         phaseText.text = (action.Phase + " Phase");
+        if (action.MagicLevel > 0) // This is a spell
+        {
+            magicLevelBox.SetActive(true);
+            magicLevelText.text = ("Level " + action.MagicLevel + " spell");
+        }
         descriptionText.text = action.FormatDescription();
         costText.text = action.FormatCostText();
     }

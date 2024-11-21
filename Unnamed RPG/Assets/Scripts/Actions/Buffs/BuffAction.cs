@@ -55,62 +55,8 @@ public class BuffAction : Action
             {
                 // Loop through each different buff (there will often just be 1)
                 foreach (statBuff buff in buffs)
-                    {
-                    switch (buff.stat)
-                    {
-                        case buffableCreatureStats.health: // Health
-                            target.Health += buff.ammount;
-                            // Clamp to max
-                            if (target.Health > target.MaxHealth)
-                            {
-                                target.Health = target.MaxHealth;
-                            }
-                            break;
-
-                        case buffableCreatureStats.maxHealth: // Max Health
-                            target.MaxHealth += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.energy: // Energy
-                            target.Energy += buff.ammount;
-                            // Clamp to max
-                            if (target.Energy > target.MaxEnergy)
-                            {
-                                target.Energy = target.MaxEnergy;
-                            }
-                            break;
-
-                        case buffableCreatureStats.maxEnergy: // Max Energy
-                            target.MaxEnergy += buff.ammount;
-                            break;
-
-                        // TODO: Also include special energy and max special energy
-
-                        case buffableCreatureStats.speed: // Speed
-                            target.Speed += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.strength: // Strength
-                            target.Str += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.dexterity: // Dexterity
-                            target.Dex += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.intellect: // Intellect
-                            target.Int += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.defence: // Defence
-                            target.Defence += buff.ammount;
-                            break;
-
-                        case buffableCreatureStats.armor: // Armor
-                            target.Armor += buff.ammount;
-                            break;
-                    }
-
+                {
+                    target.AddPermenantBuff(buff);    
                 }
 
                 // Update the target's UI (incase their health or energy or whatever changes)
@@ -151,7 +97,7 @@ public class BuffAction : Action
         // Update the list of all possible spaces
 
         // Get a list of every tile within range of the ability
-        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, 0);
+        possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, source.Owner.EyeHeight, 0, true);
         // Only add targets in line of sight if thats required
         if (!ignoreLineOfSight) // This ability needs line of sight
         {

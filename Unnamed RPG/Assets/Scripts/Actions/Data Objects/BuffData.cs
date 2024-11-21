@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 
 
-[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/Buff Data", order = 1)]
+[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/Actions/Buff Data", order = 1)]
 public class BuffData : ActionData
 {
     [Header("Buff Data")]

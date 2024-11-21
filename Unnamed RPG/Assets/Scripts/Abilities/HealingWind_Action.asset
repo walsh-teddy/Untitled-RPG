@@ -9,20 +9,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfeae525fc3ac99488fef0eb587d733f, type: 3}
-  m_Name: Blink
+  m_Script: {fileID: 11500000, guid: b2bd77f97abe75d4d8fe6c8594855d2c, type: 3}
+  m_Name: HealingWind_Action
   m_EditorClassIdentifier: 
-  displayName: Blink
-  animationTrigger: Teleport
+  displayName: Healing Wind
+  animationTrigger: 
   castAnimationTrigger: 
+  projectilePrefab: {fileID: 0}
+  buttonImage: {fileID: 0}
   phase: 2
-  isMinorAction: 0
-  cooldownCost: 4
+  magicLevel: 1
+  isMinorAction: 1
+  cooldownCost: 2
   rechargeCost: 0
-  energyCost: 2
+  energyCost: 1
   castTimeCost: 0
-  speedChange: 0
-  speedOverwrite: 0
-  chasing: 0
-  range: 2
+  range: 3
   ignoreLineOfSight: 0
+  duration: 0
+  buffs:
+  - stat: 0
+    ammount: 1

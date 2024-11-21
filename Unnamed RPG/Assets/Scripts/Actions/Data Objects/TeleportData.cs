@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/Teleport Data", order = 1)]
+[CreateAssetMenu(fileName = "Data", menuName = "ScriptableObjects/Actions/Teleport Data", order = 1)]
 public class TeleportData : MoveData
 {
     [Header("Teleport Data")]

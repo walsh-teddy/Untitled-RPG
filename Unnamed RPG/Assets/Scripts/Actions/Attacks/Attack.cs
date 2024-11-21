@@ -223,15 +223,15 @@ public class Attack : Action
         if (!isRanged) // It is melee
         {
             // Get the range (targets further down count as further away)
-            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, -1);
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, source.Owner.EyeHeight, 0, true);
         }
         else // Its Ranged
         {
             // Get the range (accounting for height difs)
-            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, 1);
+            possibleSpaces = source.LevelSpawnerRef.TilesInRange(origin, range + 0.5f, source.Owner.EyeHeight, 1, false);
 
             // Remove targets from close range
-            foreach (Tile tile in source.LevelSpawnerRef.TilesInRange(origin, closeRange + 0.5f, -1))
+            foreach (Tile tile in source.LevelSpawnerRef.TilesInRange(origin, closeRange + 0.5f, source.Owner.EyeHeight, 0, true))
             {
                 // This tile is too close. Remove it from the list
                 possibleSpaces.Remove(tile);
